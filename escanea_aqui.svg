@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1536" height="1536" viewBox="0 0 1536 1536">
+  <title>Escanea Aquí — código QR</title>
+  <rect width="1536" height="1536" fill="#D4062A"/>
+
+  <!-- Marco principal -->
+  <rect x="303" y="133" width="930" height="1192" rx="52" fill="#012322"/>
+
+  <!-- Panel blanco para el código -->
+  <rect x="348" y="441" width="842" height="842" rx="35" fill="#FDFEFF"/>
+
+  <!-- Ícono de teléfono -->
+  <rect x="440" y="185" width="79" height="184" rx="19" fill="none"
+        stroke="#FDFEFF" stroke-width="10"/>
+  <rect x="450" y="214" width="59" height="109" rx="2" fill="#FDFEFF"/>
+  <line x1="450" y1="333" x2="509" y2="333" stroke="#FDFEFF" stroke-width="5"/>
+
+  <!-- Texto -->
+  <text x="589" y="319"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="76"
+        font-weight="400"
+        fill="#FDFEFF"
+        letter-spacing="-1">Escanea Aquí</text>
+</svg>

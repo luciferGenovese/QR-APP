@@ -1,0 +1,31 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="512dp"
+    android:height="640dp"
+    android:viewportWidth="512"
+    android:viewportHeight="640">
+    
+    <!-- Outer Background -->
+    <path
+        android:fillColor="#BE185D"
+        android:pathData="M 0,0 L 512,0 L 512,640 L 0,640 Z" />
+        
+    <!-- Light Pink Container -->
+    <path
+        android:fillColor="#FDF2F8"
+        android:pathData="M 32,32 L 480,32 A 32,32 0 0 1 512,64 L 512,576 A 32,32 0 0 1 480,608 L 32,608 A 32,32 0 0 1 0,576 L 0,64 A 32,32 0 0 1 32,32 Z" />
+
+    <!-- Heart Top Center (Smaller) -->
+    <path
+        android:fillColor="#F43F5E"
+        android:pathData="M 256,50 C 246,35 216,35 216,55 C 216,75 256,95 256,95 C 256,95 296,75 296,55 C 296,35 266,35 256,50 Z" />
+
+    <!-- Heart Bottom Center (Smaller) -->
+    <path
+        android:fillColor="#F43F5E"
+        android:pathData="M 256,605 C 246,590 216,590 216,610 C 216,630 256,650 256,650 C 256,650 296,630 296,610 C 296,590 266,590 256,605 Z" />
+
+    <!-- White Square Panel for QR Code -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 86,180 L 426,180 A 16,16 0 0 1 442,196 L 442,536 A 16,16 0 0 1 426,552 L 86,552 A 16,16 0 0 1 70,536 L 70,196 A 16,16 0 0 1 86,180 Z" />
+</vector>

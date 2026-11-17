@@ -1,0 +1,35 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="512dp"
+    android:height="640dp"
+    android:viewportWidth="512"
+    android:viewportHeight="640">
+    <!-- Light Neutral Canvas -->
+    <path
+        android:fillColor="#F8FAFC"
+        android:pathData="M 48,16 L 464,16 A 32,32 0 0 1 496,48 L 496,592 A 32,32 0 0 1 464,624 L 48,624 A 32,32 0 0 1 16,592 L 16,48 A 32,32 0 0 1 48,16 Z" />
+    
+    <!-- Delicate Double Outline -->
+    <path
+        android:strokeColor="#CBD5E1"
+        android:strokeWidth="2"
+        android:fillColor="#00000000"
+        android:pathData="M 48,16 L 464,16 A 32,32 0 0 1 496,48 L 496,592 A 32,32 0 0 1 464,624 L 48,624 A 32,32 0 0 1 16,592 L 16,48 A 32,32 0 0 1 48,16 Z" />
+    
+    <path
+        android:strokeColor="#E2E8F0"
+        android:strokeWidth="1"
+        android:fillColor="#00000000"
+        android:pathData="M 56,24 L 456,24 A 24,24 0 0 1 480,48 L 480,584 A 24,24 0 0 1 456,608 L 56,608 A 24,24 0 0 1 32,584 L 32,48 A 24,24 0 0 1 56,24 Z" />
+
+    <!-- QR Centered Inner Box -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:strokeColor="#E2E8F0"
+        android:strokeWidth="2"
+        android:pathData="M 80,140 L 432,140 A 24,24 0 0 1 456,164 L 456,516 A 24,24 0 0 1 432,540 L 80,540 A 24,24 0 0 1 56,516 L 56,164 A 24,24 0 0 1 80,140 Z" />
+
+    <!-- Corner Aesthetic Accent Pins -->
+    <path
+        android:fillColor="#64748B"
+        android:pathData="M 60,40 A 3,3 0 1 1 60,40.1 Z M 452,40 A 3,3 0 1 1 452,40.1 Z M 60,600 A 3,3 0 1 1 60,600.1 Z M 452,600 A 3,3 0 1 1 452,600.1 Z" />
+</vector>

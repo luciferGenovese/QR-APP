@@ -1,0 +1,50 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="512dp"
+    android:height="640dp"
+    android:viewportWidth="512"
+    android:viewportHeight="640">
+    
+    <!-- Outer Background -->
+    <path
+        android:fillColor="#0F172A"
+        android:pathData="M 0,0 L 512,0 L 512,640 L 0,640 Z" />
+        
+    <!-- Tech Frame Stroke -->
+    <path
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="4"
+        android:fillColor="#00000000"
+        android:pathData="M 32,32 L 480,32 L 480,608 L 32,608 Z" />
+
+    <!-- Corner Accents (Top Left) -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M 24,24 L 64,24 L 64,32 L 32,32 L 32,64 L 24,64 Z" />
+        
+    <!-- Corner Accents (Top Right) -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M 448,24 L 488,24 L 488,64 L 480,64 L 480,32 L 448,32 Z" />
+
+    <!-- Corner Accents (Bottom Left) -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M 24,616 L 64,616 L 64,608 L 32,608 L 32,576 L 24,576 Z" />
+        
+    <!-- Corner Accents (Bottom Right) -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M 448,616 L 488,616 L 488,576 L 480,576 L 480,608 L 448,608 Z" />
+
+    <!-- White Square Panel for QR Code -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 86,180 L 426,180 L 426,560 L 86,560 Z" />
+        
+    <!-- Inner QR Frame Stroke -->
+    <path
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="2"
+        android:fillColor="#00000000"
+        android:pathData="M 76,170 L 436,170 L 436,570 L 76,570 Z" />
+</vector>

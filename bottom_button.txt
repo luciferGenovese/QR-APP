@@ -1,0 +1,187 @@
+        Spacer(modifier = Modifier.height(20.dp))
+
+        if (type != "QR_ANIMATED") {
+            Button(
+                onClick = {
+                    // Validation Process
+                    var isValid = true
+                    p1Error = null
+                    p2Error = null
+                    p3Error = null
+                    generalError = null
+
+                    when (type) {
+                        "QR_SECRET" -> {
+                            if (secretMessage.isBlank()) {
+                                p1Error = "Ingresa el mensaje confidencial o secreto"
+                                isValid = false
+                            }
+                            if (secretPin.isBlank()) {
+                                p2Error = context.getString(R.string.err_pin_empty)
+                                isValid = false
+                            }
+                        }
+                        "QR_VCARD_PRO" -> {
+                            if (p1.isBlank()) {
+                                p1Error = "Ingresa el nombre completo"
+                                isValid = false
+                            }
+                            if (p2.isBlank()) {
+                                p2Error = context.getString(R.string.err_phone_empty)
+                                isValid = false
+                            }
+                        }
+                        "QR_STICKERS" -> {
+                            if (p2.isBlank()) {
+                                p2Error = "Ingresa el contenido o enlace de las etiquetas"
+                                isValid = false
+                            }
+                        }
+                        "QR_WATERMARK" -> {
+                            if (content.isBlank()) {
+                                generalError = context.getString(R.string.err_content_empty)
+                                isValid = false
+                            }
+                        }
+                        "QR_WIFI", "QR_WIFI_PRO" -> {
+                            if (p1.isBlank()) {
+                                p1Error = context.getString(R.string.err_ssid_empty)
+                                isValid = false
+                            }
+                            if (p3.lowercase() != "nopass" && p2.length < 8) {
+                                p2Error = context.getString(R.string.err_paspward_length)
+                                isValid = false
+                            }
+                        }
+                        "QR_PHONE", "QR_WHATSAPP" -> {
+                            if (p1.isBlank()) {
+                                p1Error = context.getString(R.string.err_invalid_phone)
+                                isValid = false
+                            } else if (!p1.matches("^[+]?[0-9\\s]{5,15}$".toRegex())) {
+                                p1Error = context.getString(R.string.err_invalid_phone)
+                                isValid = false
+                            }
+                        }
+                        "QR_URL" -> {
+                            if (p1.isBlank()) {
+                                p1Error = context.getString(R.string.err_invalid_url)
+                                isValid = false
+                            } else {
+                                val targetUrl = if (p1.startsWith("http")) p1 else "https://$p1"
+                                if (!android.util.Patterns.WEB_URL.matcher(targetUrl).matches()) {
+                                    p1Error = context.getString(R.string.err_invalid_url)
+                                    isValid = false
+                                }
+                            }
+                        }
+                        "QR_EMAIL" -> {
+                            if (p1.isBlank()) {
+                                p1Error = context.getString(R.string.err_invalid_email)
+                                isValid = false
+                            } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(p1).matches()) {
+                                p1Error = context.getString(R.string.err_invalid_email)
+                                isValid = false
+                            }
+                        }
+                        "QR_SMS" -> {
+                            if (p1.isBlank()) {
+                                p1Error = context.getString(R.string.err_invalid_phone)
+                                isValid = false
+                            }
+                        }
+                        "QR_CONTACT" -> {
+                            if (p1.isBlank()) {
+                                p1Error = context.getString(R.string.err_contact_empty)
+                                isValid = false
+                            }
+                            if (p3.isNotBlank() && !android.util.Patterns.EMAIL_ADDRESS.matcher(p3).matches()) {
+                                p3Error = context.getString(R.string.err_invalid_email)
+                                isValid = false
+                            }
+                        }
+                        else -> {
+                            val reqLength = when(type) {
+                                "EAN_8", "UPC_E" -> 8
+                                "UPC_A" -> 12
+                                "EAN_13" -> 13
+                                else -> -1
+                            }
+                            if (content.isBlank()) {
+                                generalError = context.getString(R.string.err_text_empty)
+                                isValid = false
+                            } else if (reqLength != -1 && content.length != reqLength) {
+                                generalError = context.getString(R.string.err_exact_length, reqLength)
+                                isValid = false
+                            } else if (type == "ITF" && content.length % 2 != 0) {
+                                generalError = context.getString(R.string.err_even_length)
+                                isValid = false
+                            }
+                        }
+                    }
+
+                    if (isValid) {
+                        val format = when (type) {
+                            "EAN_8" -> BarcodeFormat.EAN_8
+                            "EAN_13" -> BarcodeFormat.EAN_13
+                            "UPC_E" -> BarcodeFormat.UPC_E
+                            "UPC_A" -> BarcodeFormat.UPC_A
+                            "CODE_39" -> BarcodeFormat.CODE_39
+                            "CODE_93" -> BarcodeFormat.CODE_93
+                            "CODE_128", "BARCODE_128" -> BarcodeFormat.CODE_128
+                            "ITF" -> BarcodeFormat.ITF
+                            "PDF_417" -> BarcodeFormat.PDF_417
+                            "CODABAR" -> BarcodeFormat.CODABAR
+                            "DATA_MATRIX" -> BarcodeFormat.DATA_MATRIX
+                            "AZTEC" -> BarcodeFormat.AZTEC
+                            else -> BarcodeFormat.QR_CODE
+                        }
+                        val is1DBarcode = type in listOf("EAN_8", "EAN_13", "UPC_E", "UPC_A", "CODE_39", "CODE_93", "CODE_128", "BARCODE_128", "ITF", "CODABAR", "PDF_417")
+                        val bw = if (is1DBarcode) 800 else 512
+                        val bh = if (is1DBarcode) 400 else 512
+                        
+                        try {
+                            val contentToEncode = when (type) {
+                                "QR_SECRET" -> if (secretMessage.isNotBlank() && secretPin.isNotBlank()) SecretQrHelper.encrypt(secretMessage, secretPin) else content
+                                else -> content
+                            }
+                            
+                            val rawBitmap = CodeGenerator.generateBitmapOrThrow(
+                                content = contentToEncode,
+                                format = format,
+                                width = bw,
+                                height = bh,
+                                foregroundColor = selectedForegroundColor,
+                                backgroundColor = selectedBackgroundColor,
+                                bodyShape = selectedBodyShape,
+                                logoBitmap = if (removeLogo) null else (selectedLogoBitmap ?: getSocialLogo(context, type))
+                            )
+                            generatedBitmap = if (cachedTemplateBitmap != null) {
+                                compositeWithCachedTemplate(cachedTemplateBitmap!!, rawBitmap)
+                            } else {
+                                rawBitmap
+                            }
+                            
+                            val finalBitmapToSave = generatedBitmap!!
+                            onSave(contentToEncode, format.name, finalBitmapToSave)
+                            savedBitmapForDialog = finalBitmapToSave
+                            showSuccessDialog = true
+                            val successMsg = if (editingCode != null) "Código actualizado con éxito" else context.getString(R.string.toast_generated_success)
+                            Toast.makeText(context, successMsg, Toast.LENGTH_SHORT).show()
+                        } catch (e: Exception) {
+                            val errorMsg = e.localizedMessage ?: context.getString(R.string.toast_cant_generate)
+                            Toast.makeText(context, "Error: $errorMsg", Toast.LENGTH_LONG).show()
+                        }
+                    } else {
+                        Toast.makeText(context, context.getString(R.string.toast_cant_generate), Toast.LENGTH_SHORT).show()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(Icons.Default.QrCode, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (editingCode != null) "Guardar Cambios y Actualizar" else stringResource(R.string.generate_button),
+                    fontWeight = FontWeight.Bold
+                )
+            }

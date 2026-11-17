@@ -1,0 +1,109 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="512dp"
+    android:height="640dp"
+    android:viewportWidth="512"
+    android:viewportHeight="640">
+
+    <!-- Deep Navy / Midnight Blue Background -->
+    <path
+        android:fillColor="#092B4C"
+        android:pathData="M 0,0 L 512,0 L 512,640 L 0,640 Z" />
+
+    <!-- Subtle Top-Left Accent Dot Matrix (4x4, compact, top corner only) -->
+    <path
+        android:fillColor="#1E5C94"
+        android:pathData="
+            M 28,28 A 2,2 0 1,1 28,28.1 Z
+            M 40,28 A 2,2 0 1,1 40,28.1 Z
+            M 52,28 A 2,2 0 1,1 52,28.1 Z
+            M 64,28 A 2,2 0 1,1 64,28.1 Z
+            M 28,40 A 2,2 0 1,1 28,40.1 Z
+            M 40,40 A 2,2 0 1,1 40,40.1 Z
+            M 52,40 A 2,2 0 1,1 52,40.1 Z
+            M 64,40 A 2,2 0 1,1 64,40.1 Z
+            M 28,52 A 2,2 0 1,1 28,52.1 Z
+            M 40,52 A 2,2 0 1,1 40,52.1 Z
+            M 52,52 A 2,2 0 1,1 52,52.1 Z
+            M 64,52 A 2,2 0 1,1 64,52.1 Z
+            M 28,64 A 2,2 0 1,1 28,64.1 Z
+            M 40,64 A 2,2 0 1,1 40,64.1 Z
+            M 52,64 A 2,2 0 1,1 52,64.1 Z
+            M 64,64 A 2,2 0 1,1 64,64.1 Z
+        " />
+
+    <!-- Top-Right Geometric Minimalist Mosaic Accents (Confined strictly to top-right corner) -->
+    <path
+        android:fillColor="#00A3FF"
+        android:pathData="M 440,20 L 492,20 L 492,36 L 440,36 Z" />
+    <path
+        android:fillColor="#38D7E7"
+        android:pathData="M 464,42 L 492,42 L 492,68 L 464,68 Z" />
+    <path
+        android:fillColor="#064E8A"
+        android:pathData="M 424,42 L 458,42 L 458,58 L 424,58 Z" />
+
+    <!-- Center White Frame for QR Code (Crisp Rounded Card) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 96,168 L 416,168 A 24,24 0 0 1 440,192 L 440,480 A 24,24 0 0 1 416,504 L 96,504 A 24,24 0 0 1 72,480 L 72,192 A 24,24 0 0 1 96,168 Z" />
+
+    <!-- Sleek Cyan Corner Target Guides on White Card -->
+    <!-- Top-Left -->
+    <path
+        android:strokeColor="#00A3FF"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M 88,224 L 88,188 A 12,12 0 0 1 100,176 L 136,176" />
+    <!-- Top-Right -->
+    <path
+        android:strokeColor="#00A3FF"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M 424,224 L 424,188 A 12,12 0 0 0 412,176 L 376,176" />
+    <!-- Bottom-Left -->
+    <path
+        android:strokeColor="#00A3FF"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M 88,448 L 88,484 A 12,12 0 0 0 100,496 L 136,496" />
+    <!-- Bottom-Right -->
+    <path
+        android:strokeColor="#00A3FF"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M 424,448 L 424,484 A 12,12 0 0 1 412,496 L 376,496" />
+
+    <!-- Bottom Corner Accents (Strictly out of text zone) -->
+    <!-- Bottom-Left Mosaic -->
+    <path
+        android:fillColor="#00A3FF"
+        android:pathData="M 20,580 L 52,580 L 52,616 L 20,616 Z" />
+    <path
+        android:fillColor="#38D7E7"
+        android:pathData="M 58,596 L 82,596 L 82,616 L 58,616 Z" />
+    <path
+        android:fillColor="#064E8A"
+        android:pathData="M 20,556 L 44,556 L 44,574 L 20,574 Z" />
+
+    <!-- Bottom-Right Dot Matrix -->
+    <path
+        android:fillColor="#1E5C94"
+        android:pathData="
+            M 448,580 A 2,2 0 1,1 448,580.1 Z
+            M 460,580 A 2,2 0 1,1 460,580.1 Z
+            M 472,580 A 2,2 0 1,1 472,580.1 Z
+            M 484,580 A 2,2 0 1,1 484,580.1 Z
+            M 448,592 A 2,2 0 1,1 448,592.1 Z
+            M 460,592 A 2,2 0 1,1 460,592.1 Z
+            M 472,592 A 2,2 0 1,1 472,592.1 Z
+            M 484,592 A 2,2 0 1,1 484,592.1 Z
+            M 448,604 A 2,2 0 1,1 448,604.1 Z
+            M 460,604 A 2,2 0 1,1 460,604.1 Z
+            M 472,604 A 2,2 0 1,1 472,604.1 Z
+            M 484,604 A 2,2 0 1,1 484,604.1 Z
+            M 448,616 A 2,2 0 1,1 448,616.1 Z
+            M 460,616 A 2,2 0 1,1 460,616.1 Z
+            M 472,616 A 2,2 0 1,1 472,616.1 Z
+            M 484,616 A 2,2 0 1,1 484,616.1 Z
+        " />
+</vector>

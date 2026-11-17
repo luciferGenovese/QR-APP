@@ -1,0 +1,26 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="512dp"
+    android:height="640dp"
+    android:viewportWidth="512"
+    android:viewportHeight="640">
+    
+    <!-- Outer Background -->
+    <path
+        android:fillColor="#14532D"
+        android:pathData="M 0,0 L 512,0 L 512,640 L 0,640 Z" />
+        
+    <!-- Light Green Container with huge rounded corners -->
+    <path
+        android:fillColor="#D1FAE5"
+        android:pathData="M 40,80 L 472,80 A 40,40 0 0 1 512,120 L 512,640 L 0,640 L 0,120 A 40,40 0 0 1 40,80 Z" />
+
+    <!-- Simple Leaf Icon Top Right of container -->
+    <path
+        android:fillColor="#10B981"
+        android:pathData="M 420,100 C 440,100 460,120 460,140 C 460,160 440,160 440,160 C 440,160 420,160 420,140 C 420,120 420,100 420,100 Z" />
+        
+    <!-- White Square Panel for QR Code -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 86,190 L 426,190 A 24,24 0 0 1 450,214 L 450,554 A 24,24 0 0 1 426,578 L 86,578 A 24,24 0 0 1 62,554 L 62,214 A 24,24 0 0 1 86,190 Z" />
+</vector>

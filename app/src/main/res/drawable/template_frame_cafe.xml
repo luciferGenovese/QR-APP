@@ -1,0 +1,31 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="512dp"
+    android:height="640dp"
+    android:viewportWidth="512"
+    android:viewportHeight="640">
+    
+    <!-- Outer Background -->
+    <path
+        android:fillColor="#4A3B32"
+        android:pathData="M 0,0 L 512,0 L 512,640 L 0,640 Z" />
+        
+    <!-- Cream Container -->
+    <path
+        android:fillColor="#D4C3A3"
+        android:pathData="M 40,40 L 472,40 A 16,16 0 0 1 488,56 L 488,584 A 16,16 0 0 1 472,600 L 40,600 A 16,16 0 0 1 24,584 L 24,56 A 16,16 0 0 1 40,40 Z" />
+        
+    <!-- Accent Top Line -->
+    <path
+        android:fillColor="#8C6B52"
+        android:pathData="M 60,60 L 452,60 L 452,68 L 60,68 Z" />
+
+    <!-- Accent Bottom Line -->
+    <path
+        android:fillColor="#8C6B52"
+        android:pathData="M 60,572 L 452,572 L 452,580 L 60,580 Z" />
+
+    <!-- White Square Panel for QR Code -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 86,180 L 426,180 A 12,12 0 0 1 438,192 L 438,548 A 12,12 0 0 1 426,560 L 86,560 A 12,12 0 0 1 74,548 L 74,192 A 12,12 0 0 1 86,180 Z" />
+</vector>

@@ -1,0 +1,5 @@
+1. Rewrite TemplateRenderer.kt to use the new architecture.
+2. Define TemplateCanvas, TemplateQrArea, TemplateElement data classes.
+3. Update AVAILABLE_TEMPLATES to use the new architecture for all 11 existing templates (escanea_aqui, navy_geo, pay_minimal, modern_blue, scan_me_neon, minimal_clean, vip_gold, cafe_menu, tech_blue, eco_nature, romantic_love, party_event).
+4. Update TemplateCustomization to take a list of TemplateElement overrides.
+5. In TemplatesScreen.kt, update the instantiation of TemplateCustomization to merge the user inputs (title, subtext) into the parameterized elements.

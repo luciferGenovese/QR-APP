@@ -1,0 +1,29 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="512dp"
+    android:height="640dp"
+    android:viewportWidth="512"
+    android:viewportHeight="640">
+    <!-- Dark Background Card -->
+    <path
+        android:fillColor="#0F172A"
+        android:pathData="M 40,16 L 472,16 A 28,28 0 0 1 500,44 L 500,596 A 28,28 0 0 1 472,624 L 40,624 A 28,28 0 0 1 12,596 L 12,44 A 28,28 0 0 1 40,16 Z" />
+    
+    <!-- Neon Cyan Border -->
+    <path
+        android:strokeColor="#06B6D4"
+        android:strokeWidth="4"
+        android:fillColor="#00000000"
+        android:pathData="M 40,16 L 472,16 A 28,28 0 0 1 500,44 L 500,596 A 28,28 0 0 1 472,624 L 40,624 A 28,28 0 0 1 12,596 L 12,44 A 28,28 0 0 1 40,16 Z" />
+
+    <!-- QR White Box Container Perfectly Centered -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 76,140 L 436,140 A 20,20 0 0 1 456,160 L 456,520 A 20,20 0 0 1 436,540 L 76,540 A 20,20 0 0 1 56,520 L 56,160 A 20,20 0 0 1 76,140 Z" />
+
+    <!-- Corner Brackets -->
+    <path
+        android:strokeColor="#22D3EE"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:pathData="M 36,160 L 36,120 L 76,120 M 476,160 L 476,120 L 436,120 M 36,520 L 36,560 L 76,560 M 476,520 L 476,560 L 436,560" />
+</vector>

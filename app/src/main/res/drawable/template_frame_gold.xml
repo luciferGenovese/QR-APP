@@ -1,0 +1,29 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="512dp"
+    android:height="640dp"
+    android:viewportWidth="512"
+    android:viewportHeight="640">
+    <!-- Premium Dark Charcoal Canvas -->
+    <path
+        android:fillColor="#18181B"
+        android:pathData="M 44,16 L 468,16 A 28,28 0 0 1 496,44 L 496,596 A 28,28 0 0 1 468,624 L 44,624 A 28,28 0 0 1 16,596 L 16,44 A 28,28 0 0 1 44,16 Z" />
+    
+    <!-- Metallic Gold Inset Border -->
+    <path
+        android:strokeColor="#F59E0B"
+        android:strokeWidth="4"
+        android:fillColor="#00000000"
+        android:pathData="M 48,22 L 464,22 A 22,22 0 0 1 486,44 L 486,596 A 22,22 0 0 1 464,618 L 48,618 A 22,22 0 0 1 26,596 L 26,44 A 22,22 0 0 1 48,22 Z" />
+    
+    <!-- Inner White QR Frame -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:strokeColor="#D97706"
+        android:strokeWidth="2"
+        android:pathData="M 76,140 L 436,140 A 20,20 0 0 1 456,160 L 456,520 A 20,20 0 0 1 436,540 L 76,540 A 20,20 0 0 1 56,520 L 56,160 A 20,20 0 0 1 76,140 Z" />
+
+    <!-- Gold Corner Stars/Diamonds -->
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M 48,44 L 54,34 L 60,44 L 50,44 Z M 464,44 L 470,34 L 476,44 L 466,44 Z M 48,596 L 54,586 L 60,596 L 50,596 Z M 464,596 L 470,586 L 476,596 L 466,596 Z" />
+</vector>

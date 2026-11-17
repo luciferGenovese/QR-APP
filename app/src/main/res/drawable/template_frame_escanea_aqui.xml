@@ -1,0 +1,42 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="512dp"
+    android:height="640dp"
+    android:viewportWidth="512"
+    android:viewportHeight="640">
+
+    <!-- Red Outer Background Canvas -->
+    <path
+        android:fillColor="#D4062A"
+        android:pathData="M 0,0 L 512,0 L 512,640 L 0,640 Z" />
+
+    <!-- Dark Container Frame (Dark Green / Black #012322) -->
+    <path
+        android:fillColor="#012322"
+        android:pathData="M 62,32 L 450,32 A 26,26 0 0 1 476,58 L 476,582 A 26,26 0 0 1 450,608 L 62,608 A 26,26 0 0 1 36,582 L 36,58 A 26,26 0 0 1 62,32 Z" />
+
+    <!-- White Square Panel for QR Code (Centered) -->
+    <path
+        android:fillColor="#FDFEFF"
+        android:pathData="M 86,180 L 426,180 A 20,20 0 0 1 446,200 L 446,540 A 20,20 0 0 1 426,560 L 86,560 A 20,20 0 0 1 66,540 L 66,200 A 20,20 0 0 1 86,180 Z" />
+
+    <!-- Phone Icon (Left of Header) -->
+    <!-- Phone Outer Body -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FDFEFF"
+        android:strokeWidth="4"
+        android:pathData="M 76,64 L 98,64 A 8,8 0 0 1 106,72 L 106,140 A 8,8 0 0 1 98,148 L 76,148 A 8,8 0 0 1 68,140 L 68,72 A 8,8 0 0 1 76,64 Z" />
+
+    <!-- Phone Screen -->
+    <path
+        android:fillColor="#FDFEFF"
+        android:pathData="M 72,76 L 102,76 A 2,2 0 0 1 104,78 L 104,124 A 2,2 0 0 1 102,126 L 72,126 A 2,2 0 0 1 70,124 L 70,78 A 2,2 0 0 1 72,76 Z" />
+
+    <!-- Phone Home Bar -->
+    <path
+        android:strokeColor="#FDFEFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M 78,136 L 96,136" />
+
+</vector>
