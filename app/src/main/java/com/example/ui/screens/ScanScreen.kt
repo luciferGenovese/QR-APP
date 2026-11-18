@@ -18,6 +18,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -26,6 +28,8 @@ import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.FlashOff
 import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Visibility
@@ -60,6 +64,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.example.R
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -67,7 +72,6 @@ import com.example.utils.BarcodeAnalyzer
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import com.google.accompanist.permissions.shouldShowRationale
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
@@ -78,6 +82,7 @@ import java.util.concurrent.Executors
 @Composable
 fun ScanScreen(
     viewModel: com.example.ui.MainViewModel,
+    onBack: () -> Unit,
     onResult: (String, String) -> Unit
 ) {
     val context = LocalContext.current
@@ -89,8 +94,6 @@ fun ScanScreen(
     val scanVibration by viewModel.scanVibration.collectAsState()
     val autoCopyClipboard by viewModel.autoCopyClipboard.collectAsState()
     val autoOpenLinks by viewModel.autoOpenLinks.collectAsState()
-    val themeMode by viewModel.themeState.collectAsState()
-    val isLiquidGlass = themeMode == "liquid_glass" || themeMode == "liquid_glass_dark"
     
     androidx.compose.runtime.DisposableEffect(scanKeepScreenOn) {
         val activity = context as? android.app.Activity
@@ -227,7 +230,7 @@ fun ScanScreen(
                         // Outer glowing overlay corners
                         val cornerLength = 50f
                         val strokeWidth = 8f
-                        val color = Color(0xFF03A9F4) // Secondary sky blue
+                        val color = Color(0xFF86DEB8)
                         
                         // Top-Left corner tag
                         drawLine(color = color, start = Offset(left, top), end = Offset(left + cornerLength, top), strokeWidth = strokeWidth)
@@ -417,21 +420,45 @@ fun ScanScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp),
+                    .padding(horizontal = 28.dp, vertical = 56.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                val textToShow = if (cameraPermissionState.status.shouldShowRationale) {
-                    "El permiso de la cámara es necesario para escanear."
-                } else {
-                    "El permiso es requerido para usar el escáner."
+                Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.primaryContainer) {
+                    Icon(
+                        Icons.Default.QrCodeScanner, null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.padding(20.dp).size(36.dp)
+                    )
                 }
-                Text(textToShow)
+                Spacer(Modifier.height(20.dp))
+                Text(stringResource(R.string.scan_permission_title), style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+                Text(
+                    stringResource(R.string.scan_permission_desc),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(onClick = { cameraPermissionState.launchPermissionRequest() }) {
                     Text(stringResource(R.string.btn_grant_permission))
                 }
+                TextButton(onClick = { galleryLauncher.launch("image/*") }) {
+                    Text(stringResource(R.string.scan_gallery_desc))
+                }
             }
+        }
+
+        FilledIconButton(
+            onClick = onBack,
+            modifier = Modifier.align(Alignment.TopStart).padding(16.dp),
+            colors = IconButtonDefaults.filledIconButtonColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface
+            )
+        ) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.btn_back))
         }
 
         // Overlay Action Utility Column (Flash Control & Gallery Load)
@@ -525,37 +552,24 @@ fun ScanScreen(
 
         // Floating overlay confirmation panel
         scannedValue?.let { value ->
-            val cardContainerColor = when {
-                themeMode == "liquid_glass" -> Color(0xF5042637)
-                themeMode == "liquid_glass_dark" -> Color(0xF50A192F)
-                themeMode == "pink" -> Color(0xFFFFF5F7)
-                themeMode == "dark" -> MaterialTheme.colorScheme.surfaceContainerHighest
-                else -> MaterialTheme.colorScheme.surface
-            }
-            val cardBorder = if (isLiquidGlass) {
-                androidx.compose.foundation.BorderStroke(1.dp, Color(0x6638BDF8))
-            } else {
-                androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-            }
-
             Card(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 120.dp, start = 16.dp, end = 16.dp)
+                    .padding(horizontal = 16.dp, vertical = 20.dp)
                     .fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = cardContainerColor),
-                border = cardBorder,
-                elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
-                shape = RoundedCornerShape(16.dp)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                shape = MaterialTheme.shapes.large
             ) {
                 Column(
-                    modifier = Modifier.padding(20.dp)
+                    modifier = Modifier.verticalScroll(rememberScrollState()).padding(20.dp)
                 ) {
                     Text(
                         text = stringResource(R.string.scan_detected_title, scannedFormat ?: stringResource(R.string.scan_unknown)),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = if (isLiquidGlass) Color(0xFF38BDF8) else MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     val isFile = value.startsWith("FILE_RECONSTRUCTED|")
@@ -575,7 +589,7 @@ fun ScanScreen(
                     Text(
                         text = displayValue,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = if (isLiquidGlass) Color.White else MaterialTheme.colorScheme.onSurface,
+                        color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 5,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -584,9 +598,9 @@ fun ScanScreen(
                         Spacer(modifier = Modifier.height(12.dp))
                         Card(
                             colors = CardDefaults.cardColors(
-                                containerColor = if (isLiquidGlass) Color(0x330288D1) else MaterialTheme.colorScheme.tertiaryContainer
+                                containerColor = MaterialTheme.colorScheme.tertiaryContainer
                             ),
-                            border = if (isLiquidGlass) androidx.compose.foundation.BorderStroke(1.dp, Color(0x5538BDF8)) else null,
+                            border = null,
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -595,21 +609,21 @@ fun ScanScreen(
                                     Icon(
                                         imageVector = Icons.Default.Lock,
                                         contentDescription = null,
-                                        tint = if (isLiquidGlass) Color(0xFF38BDF8) else MaterialTheme.colorScheme.onTertiaryContainer,
+                                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
                                         modifier = Modifier.size(20.dp)
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
                                         "🔒 Código Secreto Encriptado (AES-256)",
                                         fontWeight = FontWeight.Bold,
-                                        color = if (isLiquidGlass) Color.White else MaterialTheme.colorScheme.onTertiaryContainer
+                                        color = MaterialTheme.colorScheme.onTertiaryContainer
                                     )
                                 }
                                 Spacer(Modifier.height(6.dp))
                                 Text(
                                     "Introduce el PIN o contraseña con la que fue creado para desbloquear el contenido.",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = if (isLiquidGlass) Color(0xFFBAE6FD) else MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f)
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f)
                                 )
                                 Spacer(Modifier.height(8.dp))
                                 OutlinedTextField(
@@ -621,13 +635,13 @@ fun ScanScreen(
                                     label = { 
                                         Text(
                                             "PIN o Clave de Desencriptado", 
-                                            color = if (isLiquidGlass) Color(0xFFBAE6FD) else MaterialTheme.colorScheme.onSurfaceVariant
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
                                         ) 
                                     },
                                     placeholder = { 
                                         Text(
                                             "Introduce la clave...", 
-                                            color = if (isLiquidGlass) Color(0x80FFFFFF) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                                         ) 
                                     },
                                     singleLine = true,
@@ -637,27 +651,27 @@ fun ScanScreen(
                                             Icon(
                                                 imageVector = if (isScanSecretPinVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                                                 contentDescription = if (isScanSecretPinVisible) "Ocultar PIN" else "Mostrar PIN",
-                                                tint = if (isLiquidGlass) Color(0xFF38BDF8) else MaterialTheme.colorScheme.primary
+                                                tint = MaterialTheme.colorScheme.primary
                                             )
                                         }
                                     },
                                     colors = OutlinedTextFieldDefaults.colors(
-                                        focusedTextColor = if (isLiquidGlass) Color.White else MaterialTheme.colorScheme.onSurface,
-                                        unfocusedTextColor = if (isLiquidGlass) Color.White else MaterialTheme.colorScheme.onSurface,
-                                        focusedContainerColor = if (isLiquidGlass) Color(0x22000000) else Color.Transparent,
-                                        unfocusedContainerColor = if (isLiquidGlass) Color(0x18000000) else Color.Transparent,
-                                        focusedBorderColor = if (isLiquidGlass) Color(0xFF38BDF8) else MaterialTheme.colorScheme.primary,
-                                        unfocusedBorderColor = if (isLiquidGlass) Color(0x66FFFFFF) else MaterialTheme.colorScheme.outline,
-                                        focusedLabelColor = if (isLiquidGlass) Color(0xFF38BDF8) else MaterialTheme.colorScheme.primary,
-                                        unfocusedLabelColor = if (isLiquidGlass) Color(0xFFBAE6FD) else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        cursorColor = if (isLiquidGlass) Color(0xFF38BDF8) else MaterialTheme.colorScheme.primary
+                                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                        focusedContainerColor = Color.Transparent,
+                                        unfocusedContainerColor = Color.Transparent,
+                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        cursorColor = MaterialTheme.colorScheme.primary
                                     ),
                                     modifier = Modifier.fillMaxWidth()
                                 )
                                 if (decryptError != null) {
                                     Text(
                                         decryptError!!,
-                                        color = if (isLiquidGlass) Color(0xFFFF6B6B) else MaterialTheme.colorScheme.error,
+                                        color = MaterialTheme.colorScheme.error,
                                         style = MaterialTheme.typography.bodySmall,
                                         modifier = Modifier.padding(top = 4.dp)
                                     )
@@ -675,12 +689,7 @@ fun ScanScreen(
                                         }
                                     },
                                     modifier = Modifier.fillMaxWidth(),
-                                    colors = if (isLiquidGlass) {
-                                        ButtonDefaults.buttonColors(
-                                            containerColor = Color(0xFF0288D1),
-                                            contentColor = Color.White
-                                        )
-                                    } else ButtonDefaults.buttonColors()
+                                    colors = ButtonDefaults.buttonColors()
                                 ) {
                                     Icon(Icons.Default.LockOpen, contentDescription = null, modifier = Modifier.size(18.dp))
                                     Spacer(Modifier.width(8.dp))
@@ -691,14 +700,14 @@ fun ScanScreen(
                                     Spacer(Modifier.height(14.dp))
                                     Card(
                                         colors = CardDefaults.cardColors(
-                                            containerColor = if (isLiquidGlass) Color(0x2800E676) else MaterialTheme.colorScheme.surface
+                                            containerColor = MaterialTheme.colorScheme.surface
                                         ),
                                         shape = RoundedCornerShape(8.dp),
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .border(
                                                 1.dp,
-                                                if (isLiquidGlass) Color(0xFF00E676) else MaterialTheme.colorScheme.primary,
+                                                MaterialTheme.colorScheme.primary,
                                                 RoundedCornerShape(8.dp)
                                             )
                                     ) {
@@ -707,21 +716,21 @@ fun ScanScreen(
                                                 Icon(
                                                     Icons.Default.CheckCircle,
                                                     contentDescription = null,
-                                                    tint = if (isLiquidGlass) Color(0xFF00E676) else MaterialTheme.colorScheme.primary,
+                                                    tint = MaterialTheme.colorScheme.primary,
                                                     modifier = Modifier.size(18.dp)
                                                 )
                                                 Spacer(Modifier.width(6.dp))
                                                 Text(
                                                     "Mensaje Desencriptado:",
                                                     fontWeight = FontWeight.Bold,
-                                                    color = if (isLiquidGlass) Color(0xFF00E676) else MaterialTheme.colorScheme.primary
+                                                    color = MaterialTheme.colorScheme.primary
                                                 )
                                             }
                                             Spacer(Modifier.height(6.dp))
                                             Text(
                                                 decrypted,
                                                 style = MaterialTheme.typography.bodyLarge,
-                                                color = if (isLiquidGlass) Color.White else MaterialTheme.colorScheme.onSurface,
+                                                color = MaterialTheme.colorScheme.onSurface,
                                                 fontWeight = FontWeight.Medium
                                             )
                                             Spacer(Modifier.height(10.dp))
@@ -736,8 +745,8 @@ fun ScanScreen(
                                                         Toast.makeText(context, "📋 Copiado al portapapeles", Toast.LENGTH_SHORT).show()
                                                     },
                                                     modifier = Modifier.weight(1f),
-                                                    colors = if (isLiquidGlass) ButtonDefaults.outlinedButtonColors(contentColor = Color.White) else ButtonDefaults.outlinedButtonColors(),
-                                                    border = if (isLiquidGlass) androidx.compose.foundation.BorderStroke(1.dp, Color(0x66FFFFFF)) else ButtonDefaults.outlinedButtonBorder
+                                                    colors = ButtonDefaults.outlinedButtonColors(),
+                                                    border = ButtonDefaults.outlinedButtonBorder
                                                 ) {
                                                     Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
                                                     Spacer(Modifier.width(4.dp))
@@ -755,7 +764,7 @@ fun ScanScreen(
                                                             }
                                                         },
                                                         modifier = Modifier.weight(1f),
-                                                        colors = if (isLiquidGlass) ButtonDefaults.buttonColors(containerColor = Color(0xFF0288D1), contentColor = Color.White) else ButtonDefaults.buttonColors()
+                                                        colors = ButtonDefaults.buttonColors()
                                                     ) {
                                                         Icon(Icons.Default.OpenInBrowser, contentDescription = null, modifier = Modifier.size(16.dp))
                                                         Spacer(Modifier.width(4.dp))
@@ -771,7 +780,7 @@ fun ScanScreen(
                                                             context.startActivity(Intent.createChooser(shareIntent, "Compartir Secreto"))
                                                         },
                                                         modifier = Modifier.weight(1f),
-                                                        colors = if (isLiquidGlass) ButtonDefaults.buttonColors(containerColor = Color(0xFF0288D1), contentColor = Color.White) else ButtonDefaults.buttonColors()
+                                                        colors = ButtonDefaults.buttonColors()
                                                     ) {
                                                         Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
                                                         Spacer(Modifier.width(4.dp))
@@ -801,7 +810,7 @@ fun ScanScreen(
                                     context.startActivity(intent)
                                 },
                                 modifier = Modifier.weight(1f),
-                                colors = if (isLiquidGlass) ButtonDefaults.buttonColors(containerColor = Color(0xFF0288D1), contentColor = Color.White) else ButtonDefaults.buttonColors()
+                                colors = ButtonDefaults.buttonColors()
                             ) {
                                 Text("🔍 Buscar Producto")
                             }
@@ -812,8 +821,8 @@ fun ScanScreen(
                                     context.startActivity(intent)
                                 },
                                 modifier = Modifier.weight(1f),
-                                colors = if (isLiquidGlass) ButtonDefaults.outlinedButtonColors(contentColor = Color.White) else ButtonDefaults.outlinedButtonColors(),
-                                border = if (isLiquidGlass) androidx.compose.foundation.BorderStroke(1.dp, Color(0x66FFFFFF)) else ButtonDefaults.outlinedButtonBorder
+                                colors = ButtonDefaults.outlinedButtonColors(),
+                                border = ButtonDefaults.outlinedButtonBorder
                             ) {
                                 Text("🥦 Nutrición")
                             }
@@ -831,9 +840,9 @@ fun ScanScreen(
                         }
                         Card(
                             colors = CardDefaults.cardColors(
-                                containerColor = if (isLiquidGlass) Color(0x3300ACC1) else MaterialTheme.colorScheme.secondaryContainer
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer
                             ),
-                            border = if (isLiquidGlass) androidx.compose.foundation.BorderStroke(1.dp, Color(0x5500ACC1)) else null,
+                            border = null,
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -841,12 +850,12 @@ fun ScanScreen(
                                 Text(
                                     "📶 Red Wi-Fi: $ssid",
                                     fontWeight = FontWeight.Bold,
-                                    color = if (isLiquidGlass) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
                                 )
                                 if (password.isNotBlank()) {
                                     Text(
                                         "🔑 Contraseña: $password",
-                                        color = if (isLiquidGlass) Color(0xFFE0F7FA) else MaterialTheme.colorScheme.onSecondaryContainer
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer
                                     )
                                     Spacer(Modifier.height(8.dp))
                                     Button(
@@ -856,7 +865,7 @@ fun ScanScreen(
                                             android.widget.Toast.makeText(context, "Contraseña Wi-Fi copiada", android.widget.Toast.LENGTH_SHORT).show()
                                         },
                                         modifier = Modifier.fillMaxWidth(),
-                                        colors = if (isLiquidGlass) ButtonDefaults.buttonColors(containerColor = Color(0xFF00ACC1), contentColor = Color.White) else ButtonDefaults.buttonColors()
+                                        colors = ButtonDefaults.buttonColors()
                                     ) {
                                         Text("Copiar Contraseña Wi-Fi")
                                     }
@@ -905,7 +914,7 @@ fun ScanScreen(
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
-                            colors = if (isLiquidGlass) ButtonDefaults.buttonColors(containerColor = Color(0xFF0288D1), contentColor = Color.White) else ButtonDefaults.buttonColors()
+                            colors = ButtonDefaults.buttonColors()
                         ) {
                             Text("Guardar Archivo")
                         }
@@ -925,8 +934,8 @@ fun ScanScreen(
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
-                            colors = if (isLiquidGlass) ButtonDefaults.outlinedButtonColors(contentColor = Color.White) else ButtonDefaults.outlinedButtonColors(),
-                            border = if (isLiquidGlass) androidx.compose.foundation.BorderStroke(1.dp, Color(0x66FFFFFF)) else ButtonDefaults.outlinedButtonBorder
+                            colors = ButtonDefaults.outlinedButtonColors(),
+                            border = ButtonDefaults.outlinedButtonBorder
                         ) {
                             Text(stringResource(R.string.btn_open))
                         }
@@ -942,8 +951,8 @@ fun ScanScreen(
                                 android.widget.Toast.makeText(context, context.getString(R.string.toast_copied), android.widget.Toast.LENGTH_SHORT).show()
                             },
                             modifier = Modifier.fillMaxWidth(),
-                            colors = if (isLiquidGlass) ButtonDefaults.outlinedButtonColors(contentColor = Color.White) else ButtonDefaults.outlinedButtonColors(),
-                            border = if (isLiquidGlass) androidx.compose.foundation.BorderStroke(1.dp, Color(0x66FFFFFF)) else ButtonDefaults.outlinedButtonBorder
+                            colors = ButtonDefaults.outlinedButtonColors(),
+                            border = ButtonDefaults.outlinedButtonBorder
                         ) {
                             Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
@@ -961,7 +970,7 @@ fun ScanScreen(
                                 scannedValue = null
                                 scannedFormat = null
                             },
-                            colors = if (isLiquidGlass) ButtonDefaults.textButtonColors(contentColor = Color(0xFFBAE6FD)) else ButtonDefaults.textButtonColors()
+                            colors = ButtonDefaults.textButtonColors()
                         ) {
                             Text(stringResource(R.string.btn_re_scan))
                         }
@@ -974,7 +983,7 @@ fun ScanScreen(
                                     scannedValue = null
                                     scannedFormat = null
                                 },
-                                colors = if (isLiquidGlass) ButtonDefaults.buttonColors(containerColor = Color(0xFF0288D1), contentColor = Color.White) else ButtonDefaults.buttonColors()
+                                colors = ButtonDefaults.buttonColors()
                             ) {
                                 Text(stringResource(R.string.btn_confirm_save))
                             }

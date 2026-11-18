@@ -6,6 +6,7 @@ import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 
 import android.content.Intent
 import android.net.Uri
@@ -56,16 +57,16 @@ fun HistoryScreen(
     var selectedFilter by remember { mutableStateOf("ALL") } // ALL, SCAN, CREATE, FAVORITE
     var showDialogWipeConfirm by remember { mutableStateOf(false) }
     var qrDialogContent by remember { mutableStateOf<com.example.data.CodeEntity?>(null) }
-    
+
     val filteredHistory = remember(history, searchQuery, selectedFilter) {
         var result = history
         result = when (selectedFilter) {
             "SCAN" -> result.filter { it.type == "SCAN" }
-            "CREATE" -> result.filter { it.type == "CREATE" }
+            "CREATE" -> result.filter { it.type != "SCAN" }
             "FAVORITE" -> result.filter { it.isFavorite }
             else -> result // ALL
         }
-        
+
         if (searchQuery.isNotBlank()) {
             result = result.filter {
                 it.content.contains(searchQuery, ignoreCase = true) ||
@@ -75,22 +76,35 @@ fun HistoryScreen(
         }
         result
     }
-    
+
     val context = LocalContext.current
-    
+
     Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        
-        // Top App Bar like
+
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Spacer(modifier = Modifier.width(24.dp)) // To center title
-            Text(
-                text = stringResource(id = R.string.history_title),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Medium
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier.weight(1f),
+                placeholder = { Text(stringResource(R.string.history_search)) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { searchQuery = "" }) {
+                            Icon(Icons.Default.Close, contentDescription = "Clear")
+                        }
+                    }
+                },
+                singleLine = true,
+                shape = MaterialTheme.shapes.medium,
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                )
             )
             var showExportMenu by remember { mutableStateOf(false) }
             Box {
@@ -139,35 +153,7 @@ fun HistoryScreen(
                 }
             }
         }
-        
-        // Search Bar
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { searchQuery = it },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            placeholder = { Text(stringResource(R.string.history_search), color = MaterialTheme.colorScheme.onSurfaceVariant) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-            trailingIcon = {
-                if (searchQuery.isNotEmpty()) {
-                    IconButton(onClick = { searchQuery = "" }) {
-                        Icon(Icons.Default.Close, contentDescription = "Clear", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(24.dp),
-            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-            )
-        )
-        
+
         // Filter Chips
         val chipColors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
             selectedContainerColor = MaterialTheme.colorScheme.primary,
@@ -212,21 +198,10 @@ fun HistoryScreen(
                 shape = RoundedCornerShape(16.dp),
                 colors = chipColors
             )
-            
-            Spacer(modifier = Modifier.weight(1f))
-            
-            IconButton(
-                onClick = { /* Sort/Filter */ },
-                modifier = Modifier
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), CircleShape)
-                    .size(36.dp)
-            ) {
-                Icon(Icons.Default.FilterList, contentDescription = "Filter", modifier = Modifier.size(20.dp))
-            }
+
         }
-        
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         if (filteredHistory.isEmpty()) {
             Column(
                 modifier = Modifier.fillMaxSize().weight(1f),
@@ -283,7 +258,7 @@ fun HistoryScreen(
             }
         }
     }
-    
+
     qrDialogContent?.let { code ->
         ViewQrDialog(
             code = code,
@@ -291,7 +266,7 @@ fun HistoryScreen(
             onEdit = { onEditCode(code) }
         )
     }
-    
+
     if (showDialogWipeConfirm) {
         AlertDialog(
             onDismissRequest = { showDialogWipeConfirm = false },
@@ -316,6 +291,7 @@ fun HistoryScreen(
 
 @androidx.compose.foundation.ExperimentalFoundationApi
 @Composable
+@OptIn(ExperimentalLayoutApi::class)
 fun HistoryItemRow(
     item: com.example.data.CodeEntity,
     onDelete: () -> Unit,
@@ -369,10 +345,11 @@ fun HistoryItemRow(
             .fillMaxWidth()
             .clickable { expanded = !expanded },
         colors = CardDefaults.cardColors(
-            containerColor = if (expanded) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(20.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column(
             modifier = Modifier
@@ -392,23 +369,8 @@ fun HistoryItemRow(
                 )
                 Spacer(modifier = Modifier.width(14.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    val context = androidx.compose.ui.platform.LocalContext.current
-                    val categoryName = when (item.type) {
-                        "SCAN" -> stringResource(R.string.scan_type_scanned)
-                        "QR_ART" -> stringResource(R.string.create_opt_art)
-                        "QR_VCARD_PRO" -> stringResource(R.string.create_opt_vcard)
-                        "QR_WIFI_PRO" -> stringResource(R.string.create_opt_wifi)
-                        "QR_SECRET" -> stringResource(R.string.create_opt_secret)
-                        "QR_STICKERS" -> stringResource(R.string.create_opt_stickers)
-                        "QR_WATERMARK" -> stringResource(R.string.create_opt_watermark)
-                        "QR_ANIMATED" -> stringResource(R.string.create_opt_animated)
-                        "QR_TEXT" -> "Texto"
-                        "QR_CODE" -> stringResource(R.string.scan_type_created)
-                        else -> item.type
-                    }
-                    val displayPrefix = if (item.type == "SCAN") categoryName else "${stringResource(R.string.scan_type_created)} • $categoryName"
                     Text(
-                        text = "$displayPrefix • ${item.format}",
+                        text = "${stringResource(if (item.type == "SCAN") R.string.scan_type_scanned else R.string.scan_type_created)} · ${item.format.replace('_', ' ')}",
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.primary
@@ -430,29 +392,7 @@ fun HistoryItemRow(
                         tint = if (item.isFavorite) androidx.compose.ui.graphics.Color(0xFFFFC107) else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                IconButton(onClick = { showFolderDialog = true }) {
-                    Icon(
-                        imageVector = Icons.Default.CreateNewFolder,
-                        contentDescription = "Mover a carpeta",
-                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
-                    )
-                }
-                IconButton(onClick = onEdit) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Editar contenido y diseño",
-                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
-                    )
-                }
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = stringResource(R.string.btn_delete),
-                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
-                    )
-                }
             }
-
             AnimatedVisibility(visible = expanded) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Spacer(modifier = Modifier.height(12.dp))
@@ -463,23 +403,31 @@ fun HistoryItemRow(
                             .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f))
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-                    
-                    // Simple flow representation of tools
+
                     Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        IconButton(onClick = { showFolderDialog = true }) {
+                            Icon(Icons.Default.CreateNewFolder, stringResource(R.string.dialog_assign_folder))
+                        }
+                        IconButton(onClick = onDelete) {
+                            Icon(Icons.Default.Delete, stringResource(R.string.btn_delete), tint = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                    FlowRow(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         // Quick copy key button
-                        IconButton(
+                        OutlinedButton(
                             onClick = {
                                 clipboardManager.setText(AnnotatedString(item.content))
                                 Toast.makeText(context, context.getString(R.string.toast_copied), Toast.LENGTH_SHORT).show()
                             },
                             modifier = Modifier
-                                .weight(1f)
-                                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
-                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+                                .heightIn(min = 48.dp)
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.ContentCopy, contentDescription = stringResource(R.string.btn_copy), modifier = Modifier.size(16.dp))
@@ -489,12 +437,10 @@ fun HistoryItemRow(
                         }
 
                         // Full Editor action button
-                        IconButton(
+                        OutlinedButton(
                             onClick = onEdit,
                             modifier = Modifier
-                                .weight(1f)
-                                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
-                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+                                .heightIn(min = 48.dp)
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.Edit, contentDescription = "Editar", modifier = Modifier.size(16.dp))
@@ -504,12 +450,10 @@ fun HistoryItemRow(
                         }
 
                         // Share key button
-                        IconButton(
+                        OutlinedButton(
                             onClick = onShare,
                             modifier = Modifier
-                                .weight(1f)
-                                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
-                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+                                .heightIn(min = 48.dp)
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.Share, contentDescription = stringResource(R.string.btn_send), modifier = Modifier.size(16.dp))
@@ -520,7 +464,7 @@ fun HistoryItemRow(
 
                         // Web Browser action button
                         if (isUrl) {
-                            IconButton(
+                            OutlinedButton(
                                 onClick = {
                                     try {
                                         val url = if (item.content.startsWith("http")) item.content else "https://${item.content}"
@@ -531,9 +475,7 @@ fun HistoryItemRow(
                                     }
                                 },
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
-                                    .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+                                    .heightIn(min = 48.dp)
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Default.OpenInBrowser, contentDescription = stringResource(R.string.btn_open), modifier = Modifier.size(16.dp))
@@ -544,12 +486,10 @@ fun HistoryItemRow(
                         }
 
                         // Display QR Dialog button
-                        IconButton(
+                        OutlinedButton(
                             onClick = onViewQr,
                             modifier = Modifier
-                                .weight(1f)
-                                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
-                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+                                .heightIn(min = 48.dp)
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.Visibility, contentDescription = stringResource(R.string.btn_view_qr), modifier = Modifier.size(16.dp))
@@ -609,8 +549,7 @@ fun ViewQrDialog(
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+                .fillMaxWidth(),
             shape = MaterialTheme.shapes.large,
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
@@ -618,7 +557,8 @@ fun ViewQrDialog(
         ) {
             Column(
                 modifier = Modifier
-                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp)
                     .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -652,9 +592,9 @@ fun ViewQrDialog(
                 )
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     OutlinedButton(
                         onClick = {
@@ -663,7 +603,7 @@ fun ViewQrDialog(
                                 val bytes = java.io.ByteArrayOutputStream().apply {
                                     b.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, this)
                                 }.toByteArray()
-                                
+
                                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
                                     val resolver = context.contentResolver
                                     val contentValues = android.content.ContentValues().apply {
@@ -687,11 +627,11 @@ fun ViewQrDialog(
                                 }
                             }
                         },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                     ) {
                         Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text(stringResource(R.string.btn_download), style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.btn_download), style = MaterialTheme.typography.labelLarge)
                     }
 
                     if (onEdit != null) {
@@ -700,19 +640,19 @@ fun ViewQrDialog(
                                 onDismiss()
                                 onEdit()
                             },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                         ) {
                             Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text("Editar", style = MaterialTheme.typography.labelSmall)
+                            Text(stringResource(R.string.home_edit_qr), style = MaterialTheme.typography.labelLarge)
                         }
                     }
 
                     Button(
                         onClick = onDismiss,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                     ) {
-                        Text(stringResource(R.string.btn_close), style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.btn_close), style = MaterialTheme.typography.labelLarge)
                     }
                 }
 

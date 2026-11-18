@@ -43,6 +43,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.os.LocaleListCompat
+import com.example.BuildConfig
 import com.example.R
 import com.example.ui.MainViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -50,85 +51,58 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 
 @Composable
-fun SettingsScreen(viewModel: MainViewModel, onNavigate: (String) -> Unit) {
+fun SettingsScreen(onNavigate: (String) -> Unit) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
             .verticalScroll(androidx.compose.foundation.rememberScrollState())
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        SettingsMenuItem(
-            icon = Icons.Outlined.ColorLens,
-            title = stringResource(R.string.set_theme),
-            onClick = { onNavigate("settings/theme") }
-        )
-        SettingsMenuItem(
-            icon = Icons.Outlined.Language,
-            title = stringResource(R.string.set_language),
-            onClick = { onNavigate("settings/language") }
-        )
-        SettingsMenuItem(
-            icon = Icons.Outlined.Delete,
-            title = stringResource(R.string.set_clear_data),
-            onClick = { onNavigate("settings/data") }
-        )
-        SettingsMenuItem(
-            icon = Icons.Outlined.QrCodeScanner,
-            title = stringResource(R.string.set_category_scanning),
-            onClick = { onNavigate("settings/scan") }
-        )
-        SettingsMenuItem(
-            icon = Icons.Outlined.AutoAwesome,
-            title = stringResource(R.string.set_category_auto_actions),
-            onClick = { onNavigate("settings/auto") }
-        )
-        SettingsMenuItem(
-            icon = Icons.Outlined.Security,
-            title = stringResource(R.string.set_permissions),
-            onClick = { onNavigate("settings/permissions") }
-        )
-        SettingsMenuItem(
-            icon = Icons.Outlined.AutoAwesome,
-            title = stringResource(R.string.create_opt_ultra_transfer),
-            onClick = { onNavigate("ultra_transfer") }
-        )
-        SettingsMenuItem(
-            icon = Icons.Outlined.Info,
-            title = stringResource(R.string.set_about),
-            onClick = { onNavigate("settings/about") }
-        )
+        SettingsGroup(stringResource(R.string.settings_personalization)) {
+            SettingsMenuItem(Icons.Outlined.ColorLens, stringResource(R.string.set_theme), { onNavigate("settings/theme") })
+            SettingsMenuItem(Icons.Outlined.Language, stringResource(R.string.set_language), { onNavigate("settings/language") })
+        }
+        SettingsGroup(stringResource(R.string.settings_tools)) {
+            SettingsMenuItem(Icons.Outlined.QrCodeScanner, stringResource(R.string.set_category_scanning), { onNavigate("settings/scan") })
+            SettingsMenuItem(Icons.Outlined.AutoAwesome, stringResource(R.string.set_category_auto_actions), { onNavigate("settings/auto") })
+            SettingsMenuItem(Icons.Outlined.Security, stringResource(R.string.set_permissions), { onNavigate("settings/permissions") })
+            SettingsMenuItem(Icons.Outlined.AutoAwesome, stringResource(R.string.home_transfer_file), { onNavigate("ultra_transfer") })
+        }
+        SettingsGroup(stringResource(R.string.settings_app)) {
+            SettingsMenuItem(Icons.Outlined.Delete, stringResource(R.string.set_clear_data), { onNavigate("settings/data") })
+            SettingsMenuItem(Icons.Outlined.Info, stringResource(R.string.set_about), { onNavigate("settings/about") })
+        }
+        Spacer(Modifier.height(4.dp))
+    }
+}
+
+@Composable
+private fun SettingsGroup(title: String, content: @Composable ColumnScope.() -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
+        Surface(
+            shape = MaterialTheme.shapes.large,
+            color = MaterialTheme.colorScheme.surface,
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        ) {
+            Column(content = content)
+        }
     }
 }
 
 @Composable
 fun SettingsMenuItem(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, onClick: () -> Unit) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 20.dp),
-        verticalAlignment = Alignment.CenterVertically
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(28.dp)
-        )
-        Spacer(modifier = Modifier.width(20.dp))
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.weight(1f)
-        )
-        Icon(
-            imageVector = Icons.Default.ChevronRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surfaceVariant) {
+            Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(10.dp).size(22.dp))
+        }
+        Text(title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
     }
-    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -148,6 +122,28 @@ fun ThemeSettingsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(16.dp)) {
+            Surface(
+                shape = MaterialTheme.shapes.large,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp)
+            ) {
+                Row(
+                    Modifier.padding(20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Outlined.QrCodeScanner, null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(40.dp)
+                    )
+                    Column {
+                        Text(stringResource(R.string.theme_preview), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    }
+                }
+            }
+            ThemeSelectionRow(title = stringResource(R.string.set_theme_modern), selected = themeMode == "modern", onClick = { viewModel.setTheme("modern") })
             ThemeSelectionRow(title = stringResource(R.string.set_theme_system), selected = themeMode == "system", onClick = { viewModel.setTheme("system") })
             ThemeSelectionRow(title = stringResource(R.string.set_theme_light), selected = themeMode == "light", onClick = { viewModel.setTheme("light") })
             ThemeSelectionRow(title = stringResource(R.string.set_theme_dark), selected = themeMode == "dark", onClick = { viewModel.setTheme("dark") })
@@ -362,7 +358,11 @@ fun AboutSettingsScreen(onBack: () -> Unit) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(text = stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = stringResource(R.string.set_version), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        text = stringResource(R.string.set_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(text = stringResource(R.string.set_developer), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                 }
@@ -435,11 +435,25 @@ fun SettingsToggleRow(title: String, description: String, checked: Boolean, onCh
 
 @Composable
 private fun ThemeSelectionRow(title: String, selected: Boolean, onClick: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().selectable(selected = selected, onClick = onClick, role = Role.RadioButton).padding(vertical = 12.dp, horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+        shape = MaterialTheme.shapes.medium,
+        color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+        )
     ) {
-        RadioButton(selected = selected, onClick = null, colors = RadioButtonDefaults.colors(selectedColor = MaterialTheme.colorScheme.primary, unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant))
-        Text(text = title, modifier = Modifier.padding(start = 16.dp), color = MaterialTheme.colorScheme.onSurface, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
+        Row(
+            Modifier.selectable(selected = selected, onClick = onClick, role = Role.RadioButton)
+                .padding(vertical = 16.dp, horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            RadioButton(selected = selected, onClick = null)
+            Text(
+                title, modifier = Modifier.weight(1f).padding(start = 16.dp),
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+            )
+        }
     }
 }

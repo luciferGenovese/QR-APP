@@ -11,27 +11,21 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddBox
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.modifier.modifierLocalMapOf
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -86,8 +80,14 @@ class MainActivity : AppCompatActivity() {
         else -> androidx.compose.foundation.isSystemInDarkTheme()
       }
       
-      MyApplicationTheme(themeMode = themeMode, darkTheme = useDarkTheme) {
-        MainApp(viewModel, themeMode)
+      MyApplicationTheme(themeMode = themeMode, darkTheme = useDarkTheme, dynamicColor = themeMode == "system") {
+        val lightBars = MaterialTheme.colorScheme.background.luminance() > 0.5f
+        SideEffect {
+            val controller = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
+            controller.isAppearanceLightStatusBars = lightBars
+            controller.isAppearanceLightNavigationBars = lightBars
+        }
+        MainApp(viewModel)
       }
     }
   }
@@ -95,7 +95,7 @@ class MainActivity : AppCompatActivity() {
 
 @Composable
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
-fun MainApp(viewModel: MainViewModel, themeMode: String) {
+fun MainApp(viewModel: MainViewModel) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: "main_tabs"
@@ -104,154 +104,78 @@ fun MainApp(viewModel: MainViewModel, themeMode: String) {
     val coroutineScope = rememberCoroutineScope()
     
     val isMainTabs = currentRoute == "main_tabs"
-    val isLiquidGlass = themeMode == "liquid_glass" || themeMode == "liquid_glass_dark"
-
-    androidx.compose.foundation.layout.Box(
-        modifier = Modifier.fillMaxSize().then(
-            when (themeMode) {
-                "liquid_glass" -> Modifier.background(
-                    androidx.compose.ui.graphics.Brush.linearGradient(
-                        colors = listOf(
-                            androidx.compose.ui.graphics.Color(0xFF64B5F6),
-                            androidx.compose.ui.graphics.Color(0xFF0097A7),
-                            androidx.compose.ui.graphics.Color(0xFF00796B)
-                        )
-                    )
-                )
-                "liquid_glass_dark" -> Modifier.background(
-                    androidx.compose.ui.graphics.Brush.linearGradient(
-                        colors = listOf(
-                            androidx.compose.ui.graphics.Color(0xFF0A192F),
-                            androidx.compose.ui.graphics.Color(0xFF0D2538),
-                            androidx.compose.ui.graphics.Color(0xFF0E3A52),
-                            androidx.compose.ui.graphics.Color(0xFF082032)
-                        )
-                    )
-                )
-                else -> Modifier.background(MaterialTheme.colorScheme.background)
-            }
-        )
-    ) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        containerColor = androidx.compose.ui.graphics.Color.Transparent,
-        contentColor = if (isLiquidGlass) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onBackground,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            if (isMainTabs) {
-                val titleRes = when (pagerState.currentPage) {
-                    0 -> stringResource(R.string.nav_home)
+            if (isMainTabs || currentRoute == "create") {
+                val title = if (currentRoute == "create") stringResource(R.string.nav_create) else when (pagerState.currentPage) {
+                    0 -> stringResource(R.string.app_name)
                     1 -> stringResource(R.string.nav_templates)
                     2 -> stringResource(R.string.nav_history)
-                    3 -> stringResource(R.string.nav_settings)
-                    else -> stringResource(R.string.nav_home)
+                    else -> stringResource(R.string.nav_settings)
                 }
                 @OptIn(ExperimentalMaterial3Api::class)
-                CenterAlignedTopAppBar(
-                    title = {
-                        Text(
-                            text = titleRes,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                            color = if (isLiquidGlass) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onSurface
-                        )
-                    },
-                    navigationIcon = {},
-                    actions = {},
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = if (isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else MaterialTheme.colorScheme.surface,
-                        titleContentColor = if (isLiquidGlass) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onSurface,
-                        navigationIconContentColor = if (isLiquidGlass) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onSurface,
-                        actionIconContentColor = if (isLiquidGlass) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onSurface
-                    )
-                )
-            } else if (currentRoute == "create") {
-                @OptIn(ExperimentalMaterial3Api::class)
-                CenterAlignedTopAppBar(
-                    title = {
-                        Text(
-                            text = stringResource(R.string.nav_create),
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                            color = if (isLiquidGlass) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onSurface
-                        )
-                    },
+                TopAppBar(
+                    title = { Text(title, style = MaterialTheme.typography.titleLarge) },
                     navigationIcon = {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.btn_back),
-                                tint = if (isLiquidGlass) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onSurface
-                            )
+                        if (currentRoute == "create") {
+                            IconButton(onClick = { navController.popBackStack() }) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.btn_back))
+                            }
+                        } else if (pagerState.currentPage == 0) {
+                            Surface(
+                                modifier = Modifier.padding(start = 20.dp, end = 10.dp),
+                                shape = MaterialTheme.shapes.small,
+                                color = MaterialTheme.colorScheme.primaryContainer
+                            ) {
+                                Icon(
+                                    Icons.Default.QrCodeScanner, null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.padding(8.dp).size(22.dp)
+                                )
+                            }
                         }
                     },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = if (isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else MaterialTheme.colorScheme.surface,
-                        titleContentColor = if (isLiquidGlass) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onSurface,
-                        navigationIconContentColor = if (isLiquidGlass) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onSurface,
-                        actionIconContentColor = if (isLiquidGlass) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onSurface
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        titleContentColor = MaterialTheme.colorScheme.onBackground
                     )
                 )
             }
         },
         bottomBar = {
             if (isMainTabs) {
-                val navBarItemColors = if (isLiquidGlass) {
-                    androidx.compose.material3.NavigationBarItemDefaults.colors(
-                        selectedIconColor = androidx.compose.ui.graphics.Color.White,
-                        selectedTextColor = androidx.compose.ui.graphics.Color.White,
-                        unselectedIconColor = androidx.compose.ui.graphics.Color(0xCCFFFFFF),
-                        unselectedTextColor = androidx.compose.ui.graphics.Color(0xCCFFFFFF),
-                        indicatorColor = androidx.compose.ui.graphics.Color(0x44FFFFFF)
-                    )
-                } else {
-                    androidx.compose.material3.NavigationBarItemDefaults.colors()
-                }
-                NavigationBar(
-                    containerColor = if (isLiquidGlass) androidx.compose.ui.graphics.Color(0x33FFFFFF) else NavigationBarDefaults.containerColor,
-                    modifier = if (isLiquidGlass) Modifier.border(1.dp, androidx.compose.ui.graphics.Color(0x55FFFFFF)) else Modifier
+                Surface(
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 0.dp
                 ) {
-                    NavigationBarItem(
-                        colors = navBarItemColors,
-                        icon = { Icon(Icons.Default.Home, contentDescription = stringResource(R.string.nav_home)) },
-                        label = { Text(stringResource(R.string.nav_home), fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) },
-                        selected = pagerState.currentPage == 0,
-                        onClick = {
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(0)
+                    Column {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
+                            val tabs = listOf(
+                                R.string.nav_home to Icons.Default.Home,
+                                R.string.nav_templates to Icons.Default.Style,
+                                R.string.nav_history to Icons.Default.History,
+                                R.string.nav_settings to Icons.Default.Settings
+                            )
+                            tabs.forEachIndexed { index, (label, icon) ->
+                                NavigationBarItem(
+                                    icon = { Icon(icon, contentDescription = null) },
+                                    label = { Text(stringResource(label), style = MaterialTheme.typography.labelMedium, maxLines = 1) },
+                                    selected = pagerState.currentPage == index,
+                                    onClick = { coroutineScope.launch { pagerState.animateScrollToPage(index) } },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                )
                             }
                         }
-                    )
-                    NavigationBarItem(
-                        colors = navBarItemColors,
-                        icon = { Icon(Icons.Default.Style, contentDescription = stringResource(R.string.nav_templates)) },
-                        label = { Text(stringResource(R.string.nav_templates), fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) },
-                        selected = pagerState.currentPage == 1,
-                        onClick = {
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(1)
-                            }
-                        }
-                    )
-                    NavigationBarItem(
-                        colors = navBarItemColors,
-                        icon = { Icon(Icons.Default.History, contentDescription = stringResource(R.string.nav_history)) },
-                        label = { Text(stringResource(R.string.nav_history), fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) },
-                        selected = pagerState.currentPage == 2,
-                        onClick = {
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(2)
-                            }
-                        }
-                    )
-                    NavigationBarItem(
-                        colors = navBarItemColors,
-                        icon = { Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.nav_settings)) },
-                        label = { Text(stringResource(R.string.nav_settings), fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) },
-                        selected = pagerState.currentPage == 3,
-                        onClick = {
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(3)
-                            }
-                        }
-                    )
+                    }
                 }
             }
         }
@@ -290,7 +214,6 @@ fun MainApp(viewModel: MainViewModel, themeMode: String) {
                             }
                         )
                         3 -> SettingsScreen(
-                            viewModel = viewModel,
                             onNavigate = { route -> navController.navigate(route) }
                         )
                     }
@@ -322,6 +245,7 @@ fun MainApp(viewModel: MainViewModel, themeMode: String) {
                 val context = androidx.compose.ui.platform.LocalContext.current
                 ScanScreen(
                     viewModel = viewModel,
+                    onBack = { navController.popBackStack() },
                     onResult = { content, format ->
                         viewModel.saveCode(content, format, "SCAN")
                         if (!scanBatchMode) {
@@ -419,6 +343,5 @@ fun MainApp(viewModel: MainViewModel, themeMode: String) {
                 )
             }
         }
-    }
     }
 }

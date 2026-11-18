@@ -18,7 +18,7 @@ class MainViewModel(private val context: android.content.Context, private val re
             initialValue = emptyList()
         )
 
-    private val _themeState = kotlinx.coroutines.flow.MutableStateFlow(prefs.getString("selected_theme", "liquid_glass") ?: "liquid_glass")
+    private val _themeState = kotlinx.coroutines.flow.MutableStateFlow(prefs.getString("selected_theme", "modern") ?: "modern")
     val themeState: StateFlow<String> = _themeState
 
     // Settings State

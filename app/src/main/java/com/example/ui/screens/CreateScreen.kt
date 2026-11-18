@@ -101,26 +101,15 @@ fun CreateScreen(
     )
 
     LazyColumn(
-        contentPadding = PaddingValues(top = 16.dp, bottom = 100.dp, start = 16.dp, end = 16.dp),
+        contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp, start = 20.dp, end = 20.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
     ) {
         item {
             Text(
-                "🌟 Novedades & Herramientas Pro",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Black,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
-            )
-            modernGroupedList(proOptions, onOptionSelected)
-        }
-
-        item {
-            Text(
                 stringResource(R.string.title_category_personal),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Black,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
             )
@@ -130,8 +119,8 @@ fun CreateScreen(
         item {
             Text(
                 stringResource(R.string.title_category_social),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Black,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
             )
@@ -141,8 +130,8 @@ fun CreateScreen(
         item {
             Text(
                 stringResource(R.string.title_category_tools),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Black,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
             )
@@ -152,12 +141,21 @@ fun CreateScreen(
         item {
             Text(
                 stringResource(R.string.title_barcodes),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Black,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
             )
             modernGroupedList(barcodeOptions, onOptionSelected)
+        }
+        item {
+            Text(
+                stringResource(R.string.create_pro_tools),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 12.dp, start = 4.dp)
+            )
+            modernGroupedList(proOptions, onOptionSelected)
         }
     }
 }
@@ -169,7 +167,7 @@ fun modernGroupedList(options: List<CreateOption>, onOptionSelected: (String) ->
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column {
             options.forEachIndexed { index, option ->
@@ -226,14 +224,10 @@ fun ModernRowItem(option: CreateOption, onClick: () -> Unit) {
         
         Text(
             text = option.title,
-            style = MaterialTheme.typography.bodyLarge.copy(
-                fontSize = 17.sp,
-                fontWeight = FontWeight.SemiBold
-            ),
+            modifier = Modifier.weight(1f).padding(end = 12.dp),
+            style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface
         )
-
-        Spacer(modifier = Modifier.weight(1f))
 
         Icon(
             imageVector = Icons.Rounded.ChevronRight,

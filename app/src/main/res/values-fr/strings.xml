@@ -126,7 +126,7 @@
     <string name="duplicate_desc">Ce code est déjà dans votre historique.</string>
     <string name="nav_settings">Paramètres</string>
     <string name="title_settings">Paramètres</string>
-    <string name="set_theme">Thème du système</string>
+    <string name="set_theme">Apparence</string>
     <string name="set_theme_desc">Choisissez entre le thème clair, sombre ou système par défaut</string>
     <string name="set_theme_system">Système par défaut</string>
     <string name="set_theme_light">Clair</string>
@@ -143,7 +143,7 @@
     <string name="set_clear_data_desc">Supprimer définitivement tout votre historique</string>
     <string name="set_about">À propos de QR OFICIAL</string>
     <string name="set_about_desc">Informations sur le logiciel et le développeur</string>
-    <string name="set_version">Version 16.0 (Build 16)</string>
+    <string name="set_version">Version %1$s (Build %2$d)</string>
     <string name="set_developer">Conçu avec excellence pour Android</string>
     <string name="home_create_qr">Créer\nCode QR</string>
     <string name="home_create_barcode">Créer\nCode-barres</string>
@@ -183,4 +183,16 @@
     <string name="create_opt_ultra_transfer">⚡ Rayon Optique (Lab 300+ Ko/s)</string>
     <string name="title_ultra_transfer">Laboratoire de Transfert Optique</string>
     <string name="desc_ultra_transfer">Transmission de fichiers et vidéos par lumière à ultra-haute vitesse.</string>
+    <string name="home_heading">Scanner et créer</string>
+    <string name="home_scan_hint">Lisez les QR codes et codes-barres avec votre caméra.</string>
+    <string name="home_saved">Vos codes</string>
+    <string name="set_theme_modern">Moderne · automatique</string>
+    <string name="settings_personalization">Personnalisation</string>
+    <string name="settings_tools">Outils</string>
+    <string name="settings_app">Application</string>
+    <string name="create_pro_tools">Outils Pro</string>
+    <string name="template_hint">Des modèles à personnaliser.</string>
+    <string name="upload_frame">Importer un cadre</string>
+    <string name="theme_preview">Aperçu</string>
+    <string name="editor_title">Personnaliser</string>
 </resources>

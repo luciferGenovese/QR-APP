@@ -283,53 +283,31 @@ fun TemplatesScreen(
                 .background(MaterialTheme.colorScheme.background)
                 .padding(16.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.title_templates),
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Text(
-                        text = "Elige una plantilla o sube tu propio marco PNG/JPG personalizado",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                    )
-                }
-
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    stringResource(R.string.template_hint),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 FilledTonalButton(
                     onClick = {
-                        if (isPro) {
-                            customFramePickerLauncher.launch("image/*")
-                        } else {
-                            showPaywallDialog = true
-                        }
+                        if (isPro) customFramePickerLauncher.launch("image/*")
+                        else showPaywallDialog = true
                     },
-                    shape = RoundedCornerShape(12.dp)
+                    modifier = Modifier.heightIn(min = 48.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.AddPhotoAlternate,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text("Subir Marco (PRO)", fontWeight = FontWeight.SemiBold)
+                    Icon(Icons.Default.AddPhotoAlternate, null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.upload_frame) + " · Pro")
                 }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
+            Spacer(Modifier.height(20.dp))
             LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
+                columns = GridCells.Adaptive(144.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 90.dp)
+                contentPadding = PaddingValues(bottom = 24.dp)
             ) {
                 items(TemplateRenderer.AVAILABLE_TEMPLATES) { template ->
                     Card(
@@ -359,14 +337,14 @@ fun TemplatesScreen(
                             },
                         shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = androidx.compose.ui.graphics.Color.Transparent
+                            containerColor = MaterialTheme.colorScheme.surface
                         ),
                         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                     ) {
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(horizontal = 4.dp, vertical = 8.dp),
+                                .padding(12.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             TemplateThumbnail(
@@ -387,9 +365,9 @@ fun TemplatesScreen(
                                     Text(
                                         text = template.name,
                                         style = MaterialTheme.typography.titleMedium,
-                                        fontSize = 19.sp,
+                                        fontSize = 16.sp,
                                         lineHeight = 22.sp,
-                                        fontWeight = FontWeight.ExtraBold,
+                                        fontWeight = FontWeight.SemiBold,
                                         maxLines = 2,
                                         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                     )

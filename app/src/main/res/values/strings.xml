@@ -163,7 +163,7 @@
     <string name="duplicate_desc">Este código ya está en el historial.</string>
     <string name="nav_settings">Ajustes</string>
     <string name="title_settings">Ajustes</string>
-    <string name="set_theme">Tema del Sistema</string>
+    <string name="set_theme">Apariencia</string>
     <string name="set_theme_desc">Elige entre tema claro, oscuro o el predeterminado del sistema</string>
     <string name="set_theme_system">Predeterminado del sistema</string>
     <string name="set_theme_light">Claro</string>
@@ -199,7 +199,7 @@
     <string name="set_clear_data_desc">Borrar de manera permanente todo tu historial de códigos</string>
     <string name="set_about">Acerca de QR OFICIAL</string>
     <string name="set_about_desc">Información del software y desarrollador</string>
-    <string name="set_version">Versión 17.0 (Build 17)</string>
+    <string name="set_version">Versión %1$s (Build %2$d)</string>
     <string name="set_developer">Creado con excelencia para Android</string>
     <string name="option_whatsapp">WhatsApp</string>
     <string name="title_qr_whatsapp">WhatsApp</string>
@@ -252,8 +252,8 @@
     <string name="btn_download">Descargar</string>
     <string name="toast_saved">Guardado: %s</string>
     <string name="set_theme_pink">Rosa pastel</string>
-    <string name="set_theme_liquid_glass">Liquid Glass</string>
-    <string name="set_theme_liquid_glass_dark">Liquid Glass Dark</string>
+    <string name="set_theme_liquid_glass">Azul claro</string>
+    <string name="set_theme_liquid_glass_dark">Azul oscuro</string>
     <string name="rate_us_title">¡Califícanos!</string>
     <string name="rate_us_desc">¿Qué te parece nuestra aplicación?</string>
     <string name="set_scan_sound_title">🔊 Sonido de Confirmación de Escaneo</string>
@@ -323,4 +323,16 @@
     <string name="create_opt_ultra_transfer">⚡ Rayo Óptico (Lab 300+ KB/s)</string>
     <string name="title_ultra_transfer">Laboratorio Óptico Ultra-Rápido</string>
     <string name="desc_ultra_transfer">Transmisión de archivos y videos por luz a alta velocidad mediante QR animado comprimido.</string>
+    <string name="home_heading">Escanea y crea</string>
+    <string name="home_scan_hint">Lee códigos QR y de barras con tu cámara.</string>
+    <string name="home_saved">Tus códigos</string>
+    <string name="set_theme_modern">Moderno · automático</string>
+    <string name="settings_personalization">Personalización</string>
+    <string name="settings_tools">Herramientas</string>
+    <string name="settings_app">Aplicación</string>
+    <string name="create_pro_tools">Herramientas Pro</string>
+    <string name="template_hint">Diseños listos para personalizar.</string>
+    <string name="upload_frame">Subir marco</string>
+    <string name="theme_preview">Vista previa</string>
+    <string name="editor_title">Personalizar</string>
 </resources>

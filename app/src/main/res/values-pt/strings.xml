@@ -126,7 +126,7 @@
     <string name="duplicate_desc">Este código já está no seu histórico.</string>
     <string name="nav_settings">Configurações</string>
     <string name="title_settings">Configurações</string>
-    <string name="set_theme">Tema do Sistema</string>
+    <string name="set_theme">Aparência</string>
     <string name="set_theme_desc">Escolha entre o tema claro, escuro ou padrão do sistema</string>
     <string name="set_theme_system">Padrão do Sistema</string>
     <string name="set_theme_light">Claro</string>
@@ -143,7 +143,7 @@
     <string name="set_clear_data_desc">Exclua permanentemente todo o histórico</string>
     <string name="set_about">Sobre QR OFICIAL</string>
     <string name="set_about_desc">Informações sobre o software e desenvolvedor</string>
-    <string name="set_version">Versão 16.0 (Build 16)</string>
+    <string name="set_version">Versão %1$s (Build %2$d)</string>
     <string name="set_developer">Criado com excelência para Android</string>
     <string name="home_create_qr">Criar\nCódigo QR</string>
     <string name="home_create_barcode">Criar\nCód. Barras</string>
@@ -183,4 +183,16 @@
     <string name="create_opt_ultra_transfer">⚡ Raio Óptico (Lab 300+ KB/s)</string>
     <string name="title_ultra_transfer">Laboratório de Transferência Óptica</string>
     <string name="desc_ultra_transfer">Transmissão de arquivos e vídeos por luz em ultra-alta velocidade.</string>
+    <string name="home_heading">Ler e criar</string>
+    <string name="home_scan_hint">Leia códigos QR e de barras com a câmara.</string>
+    <string name="home_saved">Os seus códigos</string>
+    <string name="set_theme_modern">Moderno · automático</string>
+    <string name="settings_personalization">Personalização</string>
+    <string name="settings_tools">Ferramentas</string>
+    <string name="settings_app">Aplicação</string>
+    <string name="create_pro_tools">Ferramentas Pro</string>
+    <string name="template_hint">Modelos prontos para personalizar.</string>
+    <string name="upload_frame">Enviar moldura</string>
+    <string name="theme_preview">Pré-visualização</string>
+    <string name="editor_title">Personalizar</string>
 </resources>
