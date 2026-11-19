@@ -13,6 +13,7 @@ import android.media.ToneGenerator
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.os.VibratorManager
 import android.util.Base64
 import com.google.zxing.BarcodeFormat
 import java.io.File
@@ -132,7 +133,12 @@ object SoundFxHelper {
 
     fun playFeedback(context: Context, preset: String, vibrate: Boolean = true, sound: Boolean = true) {
         if (vibrate) {
-            val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                (context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)?.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+            }
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     when (preset) {
@@ -355,7 +361,7 @@ object StickerSheetPdfHelper {
                 val qrBottomOffset = if (sublabel.isNotBlank()) subPaint.textSize + 8f else 0f
                 val maxQrSize = Math.min(contentRight - contentLeft, (contentBottom - contentTop) - (qrTopOffset + qrBottomOffset))
                 
-                if (maxQrSize > 20) {
+                if (maxQrSize > 20 && !qrBitmap.isRecycled && qrBitmap.width > 0 && qrBitmap.height > 0) {
                     val qrLeft = centerX - (maxQrSize / 2f)
                     val qrTop = contentTop + qrTopOffset + (((contentBottom - contentTop - qrTopOffset - qrBottomOffset) - maxQrSize) / 2f)
                     val qrDestRect = RectF(qrLeft, qrTop, qrLeft + maxQrSize, qrTop + maxQrSize)
@@ -372,11 +378,14 @@ object StickerSheetPdfHelper {
         pdfDocument.finishPage(page)
 
         val outputFile = File(context.cacheDir, "Stickers_${System.currentTimeMillis()}.pdf")
-        val outputStream = FileOutputStream(outputFile)
-        pdfDocument.writeTo(outputStream)
-        pdfDocument.close()
-        outputStream.flush()
-        outputStream.close()
+        try {
+            FileOutputStream(outputFile).use { outputStream ->
+                pdfDocument.writeTo(outputStream)
+                outputStream.flush()
+            }
+        } finally {
+            pdfDocument.close()
+        }
 
         return outputFile
     }

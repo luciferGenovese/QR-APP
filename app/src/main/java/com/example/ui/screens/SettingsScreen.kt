@@ -8,14 +8,15 @@ import android.Manifest
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.outlined.ColorLens
 import androidx.compose.material.icons.outlined.Language
@@ -115,7 +116,7 @@ fun ThemeSettingsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                 title = { Text(stringResource(R.string.set_theme)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -163,7 +164,7 @@ fun LanguageSettingsScreen(onBack: () -> Unit) {
                 title = { Text(stringResource(R.string.set_language)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -185,23 +186,64 @@ fun LanguageSettingsScreen(onBack: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DataSettingsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
+    val context = LocalContext.current
+    var showConfirmDialog by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.set_clear_data)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
-            Button(onClick = { viewModel.deleteAllCodes() }, modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = stringResource(R.string.set_clear_data_desc),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+            Button(
+                onClick = { showConfirmDialog = true },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError
+                )
+            ) {
                 Text(stringResource(R.string.btn_delete_all))
             }
         }
+    }
+
+    if (showConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showConfirmDialog = false },
+            title = { Text(stringResource(R.string.dialog_title_clear_history)) },
+            text = { Text(stringResource(R.string.dialog_desc_clear_history)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteAllCodes()
+                        showConfirmDialog = false
+                        Toast.makeText(context, context.getString(R.string.toast_history_cleared), Toast.LENGTH_SHORT).show()
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(stringResource(R.string.btn_confirm_wipe))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showConfirmDialog = false }) {
+                    Text(stringResource(R.string.btn_cancel))
+                }
+            }
+        )
     }
 }
 
@@ -221,7 +263,7 @@ fun ScanSettingsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                 title = { Text(stringResource(R.string.set_category_scanning)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -271,7 +313,7 @@ fun AutoActionsSettingsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                 title = { Text(stringResource(R.string.set_category_auto_actions)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -295,7 +337,7 @@ fun PermissionsSettingsScreen(onBack: () -> Unit) {
                 title = { Text(stringResource(R.string.set_permissions)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -313,10 +355,14 @@ fun PermissionsSettingsScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = {
-                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                        data = Uri.fromParts("package", context.packageName, null)
+                    try {
+                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = Uri.fromParts("package", context.packageName, null)
+                        }
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        android.widget.Toast.makeText(context, "No se pudo abrir la configuración de la aplicación", android.widget.Toast.LENGTH_SHORT).show()
                     }
-                    context.startActivity(intent)
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -342,7 +388,7 @@ fun AboutSettingsScreen(onBack: () -> Unit) {
                 title = { Text(stringResource(R.string.set_about)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -374,7 +420,7 @@ fun AboutSettingsScreen(onBack: () -> Unit) {
                         val reviewManager = ReviewManagerFactory.create(context)
                         val request = reviewManager.requestReviewFlow()
                         request.addOnCompleteListener { task ->
-                            if (task.isSuccessful) {
+                            if (task.isSuccessful && !activity.isFinishing && !activity.isDestroyed) {
                                 val reviewInfo = task.result
                                 reviewManager.launchReviewFlow(activity, reviewInfo)
                             } else {

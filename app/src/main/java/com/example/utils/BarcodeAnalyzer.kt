@@ -48,4 +48,11 @@ class BarcodeAnalyzer(
             imageProxy.close()
         }
     }
+
+    fun close() {
+        try {
+            scanner.close()
+        } catch (_: Exception) {
+        }
+    }
 }

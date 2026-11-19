@@ -117,6 +117,10 @@ object PdfAndPrintHelper {
                     callback: LayoutResultCallback?,
                     extras: Bundle?
                 ) {
+                    if (cancellationSignal?.isCanceled == true) {
+                        callback?.onLayoutCancelled()
+                        return
+                    }
                     val pdi = PrintDocumentInfo.Builder(jobName)
                         .setContentType(PrintDocumentInfo.CONTENT_TYPE_DOCUMENT)
                         .setPageCount(1)
@@ -226,10 +230,11 @@ object PdfAndPrintHelper {
 
         // Draw the QR bitmap centered inside the card
         val qrInnerPad = 24f
-        val qrTargetSize = qrCardSize - (qrInnerPad * 2)
-        val srcRect = Rect(0, 0, qrBitmap.width, qrBitmap.height)
-        val destRect = RectF(qrLeft + qrInnerPad, qrTop + qrInnerPad, qrLeft + qrCardSize - qrInnerPad, qrTop + qrCardSize - qrInnerPad)
-        canvas.drawBitmap(qrBitmap, srcRect, destRect, null)
+        if (!qrBitmap.isRecycled && qrBitmap.width > 0 && qrBitmap.height > 0) {
+            val srcRect = Rect(0, 0, qrBitmap.width, qrBitmap.height)
+            val destRect = RectF(qrLeft + qrInnerPad, qrTop + qrInnerPad, qrLeft + qrCardSize - qrInnerPad, qrTop + qrCardSize - qrInnerPad)
+            canvas.drawBitmap(qrBitmap, srcRect, destRect, null)
+        }
 
         // Instructions Footer
         val subtextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -321,9 +326,11 @@ object PdfAndPrintHelper {
             val qrLeft = boxRect.centerX() - (qrBoxSize / 2f)
             val qrTop = boxRect.top + 22f
 
-            val srcRect = Rect(0, 0, qrBitmap.width, qrBitmap.height)
-            val destRect = RectF(qrLeft, qrTop, qrLeft + qrBoxSize, qrTop + qrBoxSize)
-            canvas.drawBitmap(qrBitmap, srcRect, destRect, null)
+            if (!qrBitmap.isRecycled && qrBitmap.width > 0 && qrBitmap.height > 0) {
+                val srcRect = Rect(0, 0, qrBitmap.width, qrBitmap.height)
+                val destRect = RectF(qrLeft, qrTop, qrLeft + qrBoxSize, qrTop + qrBoxSize)
+                canvas.drawBitmap(qrBitmap, srcRect, destRect, null)
+            }
         }
 
         pdfDocument.finishPage(page)
@@ -340,11 +347,15 @@ object PdfAndPrintHelper {
             FileOutputStream(file).use { out ->
                 pdfDocument.writeTo(out)
             }
-            pdfDocument.close()
             FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
         } catch (e: Exception) {
             e.printStackTrace()
             null
+        } finally {
+            try {
+                pdfDocument.close()
+            } catch (_: Exception) {
+            }
         }
     }
 
@@ -367,11 +378,16 @@ object PdfAndPrintHelper {
      * Shares a file URI with standard Android share sheet.
      */
     fun shareUri(context: Context, uri: Uri, mimeType: String, chooserTitle: String) {
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = mimeType
-            putExtra(Intent.EXTRA_STREAM, uri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        try {
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = mimeType
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(Intent.createChooser(intent, chooserTitle))
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(context, "No hay aplicación disponible para compartir", Toast.LENGTH_SHORT).show()
         }
-        context.startActivity(Intent.createChooser(intent, chooserTitle))
     }
 }

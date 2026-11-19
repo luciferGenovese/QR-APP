@@ -202,6 +202,10 @@ fun MainApp(viewModel: MainViewModel) {
                             },
                             onNavigateToTransfer = {
                                 navController.navigate("ultra_transfer")
+                            },
+                            onEditCode = { code ->
+                                viewModel.setEditingCode(code)
+                                navController.navigate("edit_code")
                             }
                         )
                         1 -> TemplatesScreen(viewModel = viewModel)
@@ -287,13 +291,14 @@ fun MainApp(viewModel: MainViewModel) {
                     val resolvedType = when {
                         code.format != "QR_CODE" && code.format.isNotBlank() && code.format in listOf("EAN_8", "EAN_13", "UPC_E", "UPC_A", "CODE_39", "CODE_93", "CODE_128", "BARCODE_128", "ITF", "PDF_417", "CODABAR", "DATA_MATRIX", "AZTEC") -> code.format
                         code.type.startsWith("QR_") -> code.type
+                        com.example.utils.SecretQrHelper.isSecretQr(code.content) -> "QR_SECRET"
+                        code.content.startsWith("https://wa.me/") -> "QR_WHATSAPP"
                         code.content.startsWith("http://") || code.content.startsWith("https://") -> "QR_URL"
                         code.content.startsWith("WIFI:") -> "QR_WIFI"
                         code.content.startsWith("tel:") -> "QR_PHONE"
                         code.content.startsWith("mailto:") -> "QR_EMAIL"
                         code.content.startsWith("sms:") -> "QR_SMS"
                         code.content.startsWith("BEGIN:VCARD") -> "QR_CONTACT"
-                        code.content.startsWith("https://wa.me/") -> "QR_WHATSAPP"
                         else -> "QR_TEXT"
                     }
                     GenerateScreen(
@@ -307,9 +312,11 @@ fun MainApp(viewModel: MainViewModel) {
                                 ),
                                 bitmap = bitmap
                             )
+                            viewModel.setEditingCode(null)
                             navController.popBackStack()
                         },
                         onBack = {
+                            viewModel.setEditingCode(null)
                             navController.popBackStack()
                         }
                     )

@@ -92,6 +92,7 @@ fun ScanScreen(
     val scanKeepScreenOn by viewModel.scanKeepScreenOn.collectAsState()
     val scanSound by viewModel.scanSound.collectAsState()
     val scanVibration by viewModel.scanVibration.collectAsState()
+    val soundPreset by viewModel.soundPreset.collectAsState()
     val autoCopyClipboard by viewModel.autoCopyClipboard.collectAsState()
     val autoOpenLinks by viewModel.autoOpenLinks.collectAsState()
     
@@ -118,6 +119,13 @@ fun ScanScreen(
     var isScanSecretPinVisible by remember { mutableStateOf(false) }
     var decryptedSecretText by remember { mutableStateOf<String?>(null) }
     var decryptError by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(scannedValue) {
+        secretPinInput = ""
+        isScanSecretPinVisible = false
+        decryptedSecretText = null
+        decryptError = null
+    }
 
     // Batch Scanned items accumulator
     val batchScannedItems = remember { mutableStateListOf<Pair<String, String>>() }
@@ -155,21 +163,12 @@ fun ScanScreen(
                     .addOnSuccessListener { barcodes ->
                         if (barcodes.isNotEmpty()) {
                             val barcode = barcodes.first()
-                            
-                            // Successful Decode Vibration Feedback
-                            val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? android.os.Vibrator
-                            try {
-                                vibrator?.let {
-                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                                        it.vibrate(android.os.VibrationEffect.createOneShot(80, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
-                                    } else {
-                                        @Suppress("DEPRECATION")
-                                        it.vibrate(80)
-                                    }
-                                }
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
+                            com.example.utils.SoundFxHelper.playFeedback(
+                                context = context,
+                                preset = soundPreset,
+                                vibrate = scanVibration,
+                                sound = scanSound
+                            )
 
                             scannedValue = barcode.rawValue
                             scannedFormat = when(barcode.format) {
@@ -186,6 +185,12 @@ fun ScanScreen(
                     }
                     .addOnFailureListener {
                         Toast.makeText(context, "Error al procesar imagen: ${it.localizedMessage}", Toast.LENGTH_LONG).show()
+                    }
+                    .addOnCompleteListener {
+                        try {
+                            scanner.close()
+                        } catch (_: Exception) {
+                        }
                     }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -285,18 +290,9 @@ fun ScanScreen(
                                     
                                     if (!receivedChunks.containsKey(idx)) {
                                         receivedChunks[idx] = data
-                                        // Vibrate slightly for feedback on new chunk
-                                        val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? android.os.Vibrator
-                                        try {
-                                            vibrator?.let {
-                                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                                                    it.vibrate(android.os.VibrationEffect.createOneShot(25, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
-                                                } else {
-                                                    @Suppress("DEPRECATION")
-                                                    it.vibrate(25)
-                                                }
-                                            }
-                                        } catch (e: Exception) {}
+                                        if (scanVibration) {
+                                            com.example.utils.HapticUtil.playSuccessHaptic(context)
+                                        }
                                     }
                                     
                                     // Check if complete
@@ -310,32 +306,12 @@ fun ScanScreen(
                             }
 
                         } else {
-                            // Apply Sound Setting
-                            if (scanSound) {
-                                try {
-                                    val toneGen = android.media.ToneGenerator(android.media.AudioManager.STREAM_MUSIC, 100)
-                                    toneGen.startTone(android.media.ToneGenerator.TONE_PROP_BEEP, 150)
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                }
-                            }
-                            
-                            // Apply Vibration Setting
-                            if (scanVibration) {
-                                val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? android.os.Vibrator
-                                try {
-                                    vibrator?.let {
-                                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                                            it.vibrate(android.os.VibrationEffect.createOneShot(80, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
-                                        } else {
-                                            @Suppress("DEPRECATION")
-                                            it.vibrate(80)
-                                        }
-                                    }
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                }
-                            }
+                            com.example.utils.SoundFxHelper.playFeedback(
+                                context = context,
+                                preset = soundPreset,
+                                vibrate = scanVibration,
+                                sound = scanSound
+                            )
                             
                             // Apply Auto-copy Clipboard Setting
                             if (autoCopyClipboard) {
@@ -526,7 +502,7 @@ fun ScanScreen(
             ) {
                 FloatingActionButton(
                     onClick = {
-                        if (zoomLevel < 1f) zoomLevel += 0.1f
+                        zoomLevel = (zoomLevel + 0.1f).coerceIn(0f, 1f)
                     },
                     containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
                     contentColor = MaterialTheme.colorScheme.onSurface,
@@ -538,7 +514,7 @@ fun ScanScreen(
                 
                 FloatingActionButton(
                     onClick = {
-                        if (zoomLevel > 0f) zoomLevel -= 0.1f
+                        zoomLevel = (zoomLevel - 0.1f).coerceIn(0f, 1f)
                     },
                     containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
                     contentColor = MaterialTheme.colorScheme.onSurface,
@@ -746,7 +722,7 @@ fun ScanScreen(
                                                     },
                                                     modifier = Modifier.weight(1f),
                                                     colors = ButtonDefaults.outlinedButtonColors(),
-                                                    border = ButtonDefaults.outlinedButtonBorder
+                                                    border = ButtonDefaults.outlinedButtonBorder(enabled = true)
                                                 ) {
                                                     Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
                                                     Spacer(Modifier.width(4.dp))
@@ -773,11 +749,15 @@ fun ScanScreen(
                                                 } else {
                                                     Button(
                                                         onClick = {
-                                                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                                                putExtra(Intent.EXTRA_TEXT, decrypted)
-                                                                type = "text/plain"
+                                                            try {
+                                                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                                                    putExtra(Intent.EXTRA_TEXT, decrypted)
+                                                                    type = "text/plain"
+                                                                }
+                                                                context.startActivity(Intent.createChooser(shareIntent, "Compartir Secreto"))
+                                                            } catch (e: Exception) {
+                                                                Toast.makeText(context, "No se pudo compartir el contenido", Toast.LENGTH_SHORT).show()
                                                             }
-                                                            context.startActivity(Intent.createChooser(shareIntent, "Compartir Secreto"))
                                                         },
                                                         modifier = Modifier.weight(1f),
                                                         colors = ButtonDefaults.buttonColors()
@@ -805,9 +785,13 @@ fun ScanScreen(
                         ) {
                             Button(
                                 onClick = {
-                                    val url = com.example.utils.ProductLookupHelper.getSearchUrl(barcodeDigits, searchEngine)
-                                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
-                                    context.startActivity(intent)
+                                    try {
+                                        val url = com.example.utils.ProductLookupHelper.getSearchUrl(barcodeDigits, searchEngine)
+                                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                                        context.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, context.getString(R.string.toast_cannot_open_link), Toast.LENGTH_SHORT).show()
+                                    }
                                 },
                                 modifier = Modifier.weight(1f),
                                 colors = ButtonDefaults.buttonColors()
@@ -816,13 +800,17 @@ fun ScanScreen(
                             }
                             OutlinedButton(
                                 onClick = {
-                                    val url = com.example.utils.ProductLookupHelper.getSearchUrl(barcodeDigits, "OpenFoodFacts")
-                                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
-                                    context.startActivity(intent)
+                                    try {
+                                        val url = com.example.utils.ProductLookupHelper.getSearchUrl(barcodeDigits, "OpenFoodFacts")
+                                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                                        context.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, context.getString(R.string.toast_cannot_open_link), Toast.LENGTH_SHORT).show()
+                                    }
                                 },
                                 modifier = Modifier.weight(1f),
                                 colors = ButtonDefaults.outlinedButtonColors(),
-                                border = ButtonDefaults.outlinedButtonBorder
+                                border = ButtonDefaults.outlinedButtonBorder(enabled = true)
                             ) {
                                 Text("🥦 Nutrición")
                             }
@@ -831,13 +819,7 @@ fun ScanScreen(
 
                     if (isWifi) {
                         Spacer(modifier = Modifier.height(12.dp))
-                        val parts = value.removePrefix("WIFI:").split(";")
-                        var ssid = ""
-                        var password = ""
-                        parts.forEach { part ->
-                            if (part.startsWith("S:")) ssid = part.removePrefix("S:")
-                            if (part.startsWith("P:")) password = part.removePrefix("P:")
-                        }
+                        val (ssid, password) = remember(value) { parseWifiSsidAndPassword(value) }
                         Card(
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.secondaryContainer
@@ -901,6 +883,7 @@ fun ScanScreen(
                                             }
                                         } else {
                                             val downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+                                            if (!downloadsDir.exists()) downloadsDir.mkdirs()
                                             val file = java.io.File(downloadsDir, fName)
                                             java.io.FileOutputStream(file).use { os ->
                                                 os.write(bytes)
@@ -930,12 +913,12 @@ fun ScanScreen(
                                     val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(urlToOpen))
                                     context.startActivity(intent)
                                 } catch (e: Exception) {
-                                    // Ignore if unable to open
+                                    Toast.makeText(context, context.getString(R.string.toast_cannot_open_link), Toast.LENGTH_SHORT).show()
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.outlinedButtonColors(),
-                            border = ButtonDefaults.outlinedButtonBorder
+                            border = ButtonDefaults.outlinedButtonBorder(enabled = true)
                         ) {
                             Text(stringResource(R.string.btn_open))
                         }
@@ -952,7 +935,7 @@ fun ScanScreen(
                             },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.outlinedButtonColors(),
-                            border = ButtonDefaults.outlinedButtonBorder
+                            border = ButtonDefaults.outlinedButtonBorder(enabled = true)
                         ) {
                             Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
@@ -1012,6 +995,7 @@ fun CameraPreview(
 
     // Single thread executor designated for image analysis
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+    var activeAnalyzer by remember { mutableStateOf<BarcodeAnalyzer?>(null) }
 
     LaunchedEffect(isPaused) {
         if (!isPaused) {
@@ -1043,30 +1027,31 @@ fun CameraPreview(
 
         try {
             cameraProvider.unbindAll()
+            activeAnalyzer?.close()
 
             val preview = Preview.Builder().build().also {
                 it.setSurfaceProvider(previewView.surfaceProvider)
             }
 
+            val analyzer = BarcodeAnalyzer { barcode ->
+                if (!isPaused) {
+                    barcode.rawValue?.let { value ->
+                        if (value.startsWith("ANIM_QR|")) {
+                            onBarcodeScanned(value, barcode.format.toString())
+                        } else if (value != lastScannedValue) {
+                            lastScannedValue = value
+                            onBarcodeScanned(value, barcode.format.toString())
+                        }
+                    }
+                }
+            }
+            activeAnalyzer = analyzer
+
             val imageAnalyzer = ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
                 .also {
-                    it.setAnalyzer(
-                        cameraExecutor,
-                        BarcodeAnalyzer { barcode ->
-                            if (!isPaused) {
-                                barcode.rawValue?.let { value ->
-                                    if (value.startsWith("ANIM_QR|")) {
-                                        onBarcodeScanned(value, barcode.format.toString())
-                                    } else if (value != lastScannedValue) {
-                                        lastScannedValue = value
-                                        onBarcodeScanned(value, barcode.format.toString())
-                                    }
-                                }
-                            }
-                        }
-                    )
+                    it.setAnalyzer(cameraExecutor, analyzer)
                 }
 
             val cameraSelector = if (isFrontCamera) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
@@ -1079,7 +1064,7 @@ fun CameraPreview(
             )
             cameraReference = camera
             camera.cameraControl.enableTorch(isTorchEnabled)
-            camera.cameraControl.setLinearZoom(zoomLevel)
+            camera.cameraControl.setLinearZoom(zoomLevel.coerceIn(0f, 1f))
         } catch (e: Exception) {
             Log.e("CameraPreview", "Use case binding failed on switch", e)
         }
@@ -1099,6 +1084,8 @@ fun CameraPreview(
 
     DisposableEffect(Unit) {
         onDispose {
+            activeAnalyzer?.close()
+            activeAnalyzer = null
             cameraExecutor.shutdown()
         }
     }
@@ -1127,4 +1114,49 @@ fun CameraPreview(
         },
         modifier = Modifier.fillMaxSize()
     )
+}
+
+internal fun parseWifiSsidAndPassword(raw: String): Pair<String, String> {
+    val body = raw.removePrefix("WIFI:")
+    val tokens = mutableListOf<String>()
+    val current = StringBuilder()
+    var i = 0
+    while (i < body.length) {
+        val ch = body[i]
+        if (ch == '\\' && i + 1 < body.length) {
+            current.append(ch).append(body[i + 1])
+            i += 2
+        } else if (ch == ';') {
+            tokens.add(current.toString())
+            current.clear()
+            i++
+        } else {
+            current.append(ch)
+            i++
+        }
+    }
+    if (current.isNotEmpty()) tokens.add(current.toString())
+
+    fun unescapeWifi(value: String): String = buildString {
+        var idx = 0
+        while (idx < value.length) {
+            if (value[idx] == '\\' && idx + 1 < value.length) {
+                append(value[idx + 1])
+                idx += 2
+            } else {
+                append(value[idx])
+                idx++
+            }
+        }
+    }
+
+    var ssid = ""
+    var password = ""
+    tokens.forEach { part ->
+        when {
+            part.startsWith("S:") -> ssid = unescapeWifi(part.removePrefix("S:"))
+            part.startsWith("P:") -> password = unescapeWifi(part.removePrefix("P:"))
+        }
+    }
+    return ssid to password
 }

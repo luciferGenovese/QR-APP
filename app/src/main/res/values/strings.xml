@@ -6,7 +6,7 @@
     <string name="nav_create">Crear</string>
     <string name="nav_history">Historial</string>
     <string name="title_create_qr">Crear Código QR</string>
-    <string name="title_qr_codes" translatable="false">Códigos QR</string>
+    <string name="title_qr_codes">Códigos QR</string>
     <string name="title_barcodes">Códigos de Barras</string>
     <string name="title_category_personal">Personal</string>
     <string name="title_category_tools">Herramientas</string>
@@ -323,5 +323,43 @@
     <string name="create_opt_ultra_transfer">Transferir por QR</string>
     <string name="title_ultra_transfer">Laboratorio Óptico Ultra-Rápido</string>
     <string name="desc_ultra_transfer">Transmisión de archivos y videos por luz a alta velocidad mediante QR animado comprimido.</string>
-
+    <string name="paywall_badge">ACCESO ILIMITADO PRO</string>
+    <string name="paywall_title">Lleva tus Códigos QR al Nivel Profesional</string>
+    <string name="paywall_subtitle">Desbloquea todas las funciones avanzadas para tu negocio o marca.</string>
+    <string name="paywall_feature_1">Marcos y fondos PNG personalizados (sube tus propios artes)</string>
+    <string name="paywall_feature_2">Vector SVG con logos incrustados en ultra alta calidad</string>
+    <string name="paywall_feature_3">Plantillas de diseño exclusivas para comercio, eventos y marcas</string>
+    <string name="paywall_feature_4">Transferencia de archivos por códigos QR sin conexión</string>
+    <string name="paywall_feature_5">Sin anuncios y funciones profesionales ilimitadas</string>
+    <string name="paywall_trial_badge">PRUEBA GRATUITA</string>
+    <string name="paywall_monthly_badge">PLAN MENSUAL</string>
+    <string name="paywall_trial_today">%1$s hoy</string>
+    <string name="paywall_trial_title">%1$s gratis</string>
+    <string name="paywall_trial_desc">Prueba sin costo durante %1$s. Luego %2$s/%3$s. Se renueva automáticamente; cancela cuando quieras en Google Play.</string>
+    <string name="paywall_trial_cta">Comenzar %1$s gratis</string>
+    <string name="paywall_monthly_title">Suscripción Pro Mensual</string>
+    <string name="paywall_monthly_desc">Acceso completo por %1$s / %2$s. Se renueva automáticamente; cancela cuando quieras en Google Play.</string>
+    <string name="paywall_monthly_cta">Suscribirse · %1$s/%2$s</string>
+    <string name="paywall_loading_price">Obteniendo precio oficial de Google Play…</string>
+    <string name="paywall_fallback_desc">Consulta el precio oficial en Google Play antes de confirmar. Cancela cuando quieras.</string>
+    <string name="paywall_fallback_cta">Continuar en Google Play</string>
+    <string name="paywall_yearly_title">Plan Anual</string>
+    <string name="paywall_yearly_save">Ahorra %1$d%%</string>
+    <string name="paywall_yearly_billing">Facturación anual</string>
+    <string name="paywall_lifetime_title">De por Vida</string>
+    <string name="paywall_lifetime_badge">Pago único</string>
+    <string name="paywall_loading_short">Cargando…</string>
+    <string name="paywall_see_play">Ver en Google Play</string>
+    <string name="paywall_footer">Pago seguro gestionado por Google Play Store. Las suscripciones se renuevan automáticamente salvo cancelación en Google Play.</string>
+    <string name="billing_loading_retry">Conectando con Google Play para obtener precios…</string>
+    <string name="period_day">día</string>
+    <string name="period_week">semana</string>
+    <string name="period_month">mes</string>
+    <string name="period_year">año</string>
+    <string name="duration_days">%1$d días</string>
+    <string name="duration_weeks">%1$d semanas</string>
+    <string name="duration_months">%1$d meses</string>
+    <string name="duration_years">%1$d años</string>
+    <string name="duration_one_month">1 mes</string>
+    <string name="duration_one_year">1 año</string>
 </resources>

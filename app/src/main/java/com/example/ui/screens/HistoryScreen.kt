@@ -132,13 +132,23 @@ fun HistoryScreen(
                                     val safeContent = code.content.replace("\"", "\"\"")
                                     sb.append("${code.id},\"$safeContent\",${code.format},${code.type},${code.isFavorite},${code.timestamp}\n")
                                 }
+                                val cachePath = java.io.File(context.cacheDir, "shared_images").apply { mkdirs() }
+                                val csvFile = java.io.File(cachePath, "Historial_QR_Barcodes.csv")
+                                csvFile.writeText(sb.toString(), Charsets.UTF_8)
+                                val contentUri = androidx.core.content.FileProvider.getUriForFile(
+                                    context,
+                                    "${context.packageName}.fileprovider",
+                                    csvFile
+                                )
                                 val shareIntent = Intent(Intent.ACTION_SEND).apply {
                                     type = "text/csv"
                                     putExtra(Intent.EXTRA_SUBJECT, "Historial_QR_Barcodes.csv")
-                                    putExtra(Intent.EXTRA_TEXT, sb.toString())
+                                    putExtra(Intent.EXTRA_STREAM, contentUri)
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                 }
                                 context.startActivity(Intent.createChooser(shareIntent, "Exportar Historial CSV"))
                             } catch (e: Exception) {
+                                e.printStackTrace()
                                 Toast.makeText(context, "Error exportando historial", Toast.LENGTH_SHORT).show()
                             }
                         }
@@ -244,11 +254,15 @@ fun HistoryScreen(
                         item = item,
                         onDelete = { viewModel.deleteCode(item.id) },
                         onShare = {
-                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, item.content)
+                            try {
+                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_TEXT, item.content)
+                                }
+                                context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.btn_share)))
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "No hay aplicación disponible para compartir", Toast.LENGTH_SHORT).show()
                             }
-                            context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.btn_share)))
                         },
                         onViewQr = { qrDialogContent = item },
                         onEdit = { onEditCode(item) },
@@ -541,6 +555,7 @@ fun ViewQrDialog(
                 inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888
             }
             android.graphics.BitmapFactory.decodeFile(savedFile.absolutePath, decodeOptions)
+                ?: com.example.utils.CodeGenerator.generateBitmap(code.content, barcodeFormat)
         } else {
             com.example.utils.CodeGenerator.generateBitmap(code.content, barcodeFormat)
         }
@@ -598,32 +613,41 @@ fun ViewQrDialog(
                 ) {
                     OutlinedButton(
                         onClick = {
-                            bitmap?.let { b ->
-                                val fName = "QR_${System.currentTimeMillis()}.png"
-                                val bytes = java.io.ByteArrayOutputStream().apply {
-                                    b.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, this)
-                                }.toByteArray()
-
-                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                                    val resolver = context.contentResolver
-                                    val contentValues = android.content.ContentValues().apply {
-                                        put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, fName)
-                                        put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, android.os.Environment.DIRECTORY_DOWNLOADS)
+                            bitmap?.takeIf { !it.isRecycled }?.let { b ->
+                                try {
+                                    val fName = "QR_${System.currentTimeMillis()}.png"
+                                    val bytes = java.io.ByteArrayOutputStream().use { baos ->
+                                        b.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, baos)
+                                        baos.toByteArray()
                                     }
-                                    val uri = resolver.insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
-                                    uri?.let {
-                                        resolver.openOutputStream(it)?.use { os ->
+
+                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                                        val resolver = context.contentResolver
+                                        val contentValues = android.content.ContentValues().apply {
+                                            put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, fName)
+                                            put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "image/png")
+                                            put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, android.os.Environment.DIRECTORY_DOWNLOADS)
+                                        }
+                                        val uri = resolver.insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+                                        val stream = uri?.let { resolver.openOutputStream(it) }
+                                        if (stream != null) {
+                                            stream.use { os -> os.write(bytes) }
+                                            android.widget.Toast.makeText(context, context.getString(R.string.toast_saved, fName), android.widget.Toast.LENGTH_LONG).show()
+                                        } else {
+                                            android.widget.Toast.makeText(context, "Error al guardar la imagen", android.widget.Toast.LENGTH_SHORT).show()
+                                        }
+                                    } else {
+                                        val downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+                                        if (!downloadsDir.exists()) downloadsDir.mkdirs()
+                                        val file = java.io.File(downloadsDir, fName)
+                                        java.io.FileOutputStream(file).use { os ->
                                             os.write(bytes)
                                         }
                                         android.widget.Toast.makeText(context, context.getString(R.string.toast_saved, fName), android.widget.Toast.LENGTH_LONG).show()
                                     }
-                                } else {
-                                    val downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
-                                    val file = java.io.File(downloadsDir, fName)
-                                    java.io.FileOutputStream(file).use { os ->
-                                        os.write(bytes)
-                                    }
-                                    android.widget.Toast.makeText(context, context.getString(R.string.toast_saved, fName), android.widget.Toast.LENGTH_LONG).show()
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                    android.widget.Toast.makeText(context, "Error al guardar: ${e.localizedMessage}", android.widget.Toast.LENGTH_SHORT).show()
                                 }
                             }
                         },

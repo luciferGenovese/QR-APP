@@ -340,7 +340,7 @@ object CodeGenerator {
             }
         }
 
-        if (logoBitmap != null && format == BarcodeFormat.QR_CODE) {
+        if (logoBitmap != null && !logoBitmap.isRecycled && format == BarcodeFormat.QR_CODE) {
             val logoBoxSize = w * safeLogoRatio
             val left = (w - logoBoxSize) / 2f
             val top = (h - logoBoxSize) / 2f
@@ -386,9 +386,76 @@ object CodeGenerator {
             val innerLogoH = (logoBoxSize - pad * 2).toInt().coerceAtLeast(1)
             val scaledLogo = Bitmap.createScaledBitmap(logoBitmap, innerLogoW, innerLogoH, true)
             canvas.drawBitmap(scaledLogo, left + pad, top + pad, null)
+            if (scaledLogo !== logoBitmap && !scaledLogo.isRecycled) {
+                scaledLogo.recycle()
+            }
         }
 
         return bitmap
+    }
+
+    /**
+     * Renders a centered protective watermark stamp over a QR code bitmap while
+     * keeping the overlay compact enough to remain scannable with high ECC.
+     */
+    fun applyWatermarkOverlay(source: Bitmap, watermarkText: String): Bitmap {
+        if (source.isRecycled) return source
+        val cleanText = watermarkText.trim().ifBlank { "OFICIAL" }.take(24)
+        val result = source.copy(Bitmap.Config.ARGB_8888, true) ?: return source
+        val canvas = Canvas(result)
+        val w = result.width.toFloat()
+        val h = result.height.toFloat()
+
+        // Diagonal subtle protective watermarks across the quiet middle band
+        val subtlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.argb(65, 15, 23, 42)
+            textSize = (w * 0.065f).coerceIn(14f, 44f)
+            textAlign = Paint.Align.CENTER
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+        }
+        canvas.save()
+        canvas.rotate(-22f, w / 2f, h / 2f)
+        canvas.drawText(cleanText.uppercase(), w / 2f, h * 0.34f, subtlePaint)
+        canvas.drawText(cleanText.uppercase(), w / 2f, h * 0.68f, subtlePaint)
+        canvas.restore()
+
+        // Crisp central seal badge sized inside the QR ECC recovery budget
+        val badgeW = w * 0.42f
+        val badgeH = (h * 0.12f).coerceIn(32f, 96f)
+        val cx = w / 2f
+        val cy = h / 2f
+        val rect = RectF(cx - badgeW / 2f, cy - badgeH / 2f, cx + badgeW / 2f, cy + badgeH / 2f)
+
+        val badgeBg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.argb(238, 255, 255, 255)
+            style = Paint.Style.FILL
+        }
+        val badgeBorder = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#0F172A")
+            style = Paint.Style.STROKE
+            strokeWidth = (w * 0.006f).coerceAtLeast(2f)
+        }
+        val radius = badgeH * 0.28f
+        canvas.drawRoundRect(rect, radius, radius, badgeBg)
+        canvas.drawRoundRect(rect, radius, radius, badgeBorder)
+
+        val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#0F172A")
+            textSize = badgeH * 0.46f
+            textAlign = Paint.Align.CENTER
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+        }
+        val maxTextW = badgeW * 0.86f
+        val measured = labelPaint.measureText(cleanText.uppercase())
+        if (measured > maxTextW && measured > 0f) {
+            labelPaint.textSize = labelPaint.textSize * (maxTextW / measured)
+        }
+        val bounds = android.graphics.Rect()
+        val label = cleanText.uppercase()
+        labelPaint.getTextBounds(label, 0, label.length, bounds)
+        canvas.drawText(label, cx, cy - bounds.exactCenterY(), labelPaint)
+
+        return result
     }
 
     fun generateBitmap(

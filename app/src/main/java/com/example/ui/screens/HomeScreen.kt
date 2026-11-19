@@ -31,7 +31,8 @@ fun HomeScreen(
     onNavigateToBarcode: () -> Unit,
     onNavigateToEditBarcode: () -> Unit,
     onNavigateToScan: () -> Unit,
-    onNavigateToTransfer: () -> Unit
+    onNavigateToTransfer: () -> Unit,
+    onEditCode: ((CodeEntity) -> Unit)? = null
 ) {
     val codes by viewModel.history.collectAsState()
     var selectedFolder by remember { mutableStateOf<String?>(null) }
@@ -186,7 +187,11 @@ fun HomeScreen(
         }
     }
     selectedCodeForView?.let { code ->
-        ViewQrDialog(code = code, onDismiss = { selectedCodeForView = null })
+        ViewQrDialog(
+            code = code,
+            onDismiss = { selectedCodeForView = null },
+            onEdit = onEditCode?.let { callback -> { callback(code) } }
+        )
     }
 }
 

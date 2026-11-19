@@ -10,7 +10,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class MainViewModel(private val context: android.content.Context, private val repository: CodeRepository, private val prefs: android.content.SharedPreferences) : ViewModel() {
+class MainViewModel(context: android.content.Context, private val repository: CodeRepository, private val prefs: android.content.SharedPreferences) : ViewModel() {
+    private val appContext: android.content.Context = context.applicationContext
     val history: StateFlow<List<CodeEntity>> = repository.allCodes
         .stateIn(
             scope = viewModelScope,
@@ -53,7 +54,7 @@ class MainViewModel(private val context: android.content.Context, private val re
 
     fun playScanFeedback() {
         com.example.utils.SoundFxHelper.playFeedback(
-            context = context,
+            context = appContext,
             preset = _soundPreset.value,
             vibrate = _scanVibration.value,
             sound = _scanSound.value
@@ -111,14 +112,14 @@ class MainViewModel(private val context: android.content.Context, private val re
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             val entity = CodeEntity(content = content, format = format, type = type)
             val id = repository.insert(entity)
-            if (bitmap != null) {
+            if (bitmap != null && !bitmap.isRecycled) {
                 try {
-                    val file = java.io.File(context.filesDir, "qr_$id.png")
-                    val out = java.io.FileOutputStream(file)
-                    bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
-                    out.flush()
-                    out.close()
-                } catch(e: Exception) { e.printStackTrace() }
+                    val file = java.io.File(appContext.filesDir, "qr_$id.png")
+                    java.io.FileOutputStream(file).use { out ->
+                        bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
+                        out.flush()
+                    }
+                } catch (e: Exception) { e.printStackTrace() }
             }
         }
     }
@@ -126,34 +127,47 @@ class MainViewModel(private val context: android.content.Context, private val re
     fun updateCode(code: CodeEntity, bitmap: android.graphics.Bitmap? = null) {
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             repository.update(code)
-            if (bitmap != null) {
+            if (bitmap != null && !bitmap.isRecycled) {
                 try {
-                    val file = java.io.File(context.filesDir, "qr_${code.id}.png")
-                    val out = java.io.FileOutputStream(file)
-                    bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
-                    out.flush()
-                    out.close()
-                } catch(e: Exception) { e.printStackTrace() }
+                    val file = java.io.File(appContext.filesDir, "qr_${code.id}.png")
+                    java.io.FileOutputStream(file).use { out ->
+                        bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
+                        out.flush()
+                    }
+                } catch (e: Exception) { e.printStackTrace() }
             }
         }
     }
     
     fun deleteCode(id: Int) {
-        viewModelScope.launch {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             repository.deleteById(id)
+            try {
+                val file = java.io.File(appContext.filesDir, "qr_$id.png")
+                if (file.exists()) {
+                    file.delete()
+                }
+            } catch (e: Exception) { e.printStackTrace() }
         }
     }
     
     fun toggleFavorite(code: com.example.data.CodeEntity) {
-        viewModelScope.launch {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             repository.update(code.copy(isFavorite = !code.isFavorite))
         }
     }
 
 
     fun deleteAllCodes() {
-        viewModelScope.launch {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             repository.deleteAll()
+            try {
+                appContext.filesDir.listFiles { file ->
+                    file.name.startsWith("qr_") && file.name.endsWith(".png")
+                }?.forEach { file ->
+                    file.delete()
+                }
+            } catch (e: Exception) { e.printStackTrace() }
         }
     }
 }

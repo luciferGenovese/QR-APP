@@ -160,9 +160,10 @@ private fun MonoSenderView() {
                 Text(active.info.name, style = MaterialTheme.typography.titleMedium)
                 Text("${active.info.size} bytes · ${active.info.totalChunks} fragmentos", style = MaterialTheme.typography.bodyMedium)
             }
-            if (frame != null) {
+            val activeFrame = frame
+            if (activeFrame != null) {
                 Image(
-                    frame!!.asImageBitmap(), contentDescription = "Código de transferencia",
+                    activeFrame.asImageBitmap(), contentDescription = "Código de transferencia",
                     modifier = Modifier.fillMaxWidth().widthIn(max = 420.dp).aspectRatio(1f).background(Color.White)
                 )
                 Text("Fragmento $frameNumber de ${active.info.totalChunks}", style = MaterialTheme.typography.bodyMedium)
@@ -226,13 +227,18 @@ private fun MonoReceiverView() {
             Text("Archivo verificado · ${info?.size ?: 0} bytes")
             Button(onClick = { save.launch(info?.name ?: "archivo") }, modifier = Modifier.fillMaxWidth()) { Text("Guardar archivo") }
             OutlinedButton(onClick = {
-                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", completedFile!!)
-                val intent = Intent(Intent.ACTION_SEND).apply {
-                    type = info?.mimeType ?: "application/octet-stream"
-                    putExtra(Intent.EXTRA_STREAM, uri)
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                try {
+                    val fileToShare = completedFile ?: return@OutlinedButton
+                    val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", fileToShare)
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = info?.mimeType ?: "application/octet-stream"
+                        putExtra(Intent.EXTRA_STREAM, uri)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    context.startActivity(Intent.createChooser(intent, "Compartir archivo"))
+                } catch (e: Exception) {
+                    Toast.makeText(context, "No se pudo compartir el archivo", Toast.LENGTH_SHORT).show()
                 }
-                context.startActivity(Intent.createChooser(intent, "Compartir archivo"))
             }, modifier = Modifier.fillMaxWidth()) { Text("Compartir") }
         } else if (!permission.status.isGranted) {
             Text("Permite el acceso a la cámara para recibir el archivo.")
@@ -278,6 +284,7 @@ private fun MonoReceiverView() {
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         if (info != null || error != null) {
             TextButton(enabled = !verifying, onClick = {
+                receiver.close()
                 receiver = MonoTransferReceiver(context)
                 info = null
                 count = 0
@@ -289,6 +296,7 @@ private fun MonoReceiverView() {
     }
 }
 
+@androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
 @Composable
 private fun TransferCamera(
     modifier: Modifier,

@@ -7,6 +7,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.automirrored.rounded.WrapText
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
@@ -70,7 +72,7 @@ fun CreateScreen(
         CreateOption(stringResource(R.string.option_event), Icons.Rounded.Event, "QR_CALENDAR", primaryGroupColor, primaryIconColor),
         CreateOption(stringResource(R.string.option_location), Icons.Rounded.LocationOn, "QR_GEO", primaryGroupColor, primaryIconColor),
         CreateOption(stringResource(R.string.option_barcode), Icons.Rounded.ViewColumn, "QR_BARCODE", primaryGroupColor, primaryIconColor),
-        CreateOption(stringResource(R.string.option_reservation), Icons.Rounded.MenuBook, "QR_RESERVATION", primaryGroupColor, primaryIconColor)
+        CreateOption(stringResource(R.string.option_reservation), Icons.AutoMirrored.Rounded.MenuBook, "QR_RESERVATION", primaryGroupColor, primaryIconColor)
     )
 
     val socialOptions = listOf(
@@ -93,7 +95,7 @@ fun CreateScreen(
         CreateOption("CODE_39", Icons.Rounded.Money, "CODE_39", barcodesGroupColor, barcodesIconColor),
         CreateOption("CODE_93", Icons.Rounded.Money, "CODE_93", barcodesGroupColor, barcodesIconColor),
         CreateOption("CODE_128", Icons.Rounded.Money, "CODE_128", barcodesGroupColor, barcodesIconColor),
-        CreateOption("ITF", Icons.Rounded.WrapText, "ITF", barcodesGroupColor, barcodesIconColor),
+        CreateOption("ITF", Icons.AutoMirrored.Rounded.WrapText, "ITF", barcodesGroupColor, barcodesIconColor),
         CreateOption("PDF_417", Icons.Rounded.DocumentScanner, "PDF_417", barcodesGroupColor, barcodesIconColor),
         CreateOption("CODABAR", Icons.Rounded.ViewColumn, "CODABAR", barcodesGroupColor, barcodesIconColor),
         CreateOption("DATA_MATRIX", Icons.Rounded.Apps, "DATA_MATRIX", barcodesGroupColor, barcodesIconColor),

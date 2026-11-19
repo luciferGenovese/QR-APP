@@ -10,6 +10,7 @@ import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -120,6 +121,7 @@ fun TemplatesScreen(
         onDispose { billingManager.terminate() }
     }
     val isPro by billingManager.isPro.collectAsState()
+    val pricingState by billingManager.pricingState.collectAsState()
     var showPaywallDialog by remember { mutableStateOf(false) }
     var customFrameBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var removeCustomFrame by remember { mutableStateOf(false) }
@@ -213,7 +215,13 @@ fun TemplatesScreen(
                 qrForegroundColor = qrForegroundColor,
                 qrBackgroundColor = qrBackgroundColor,
                 logoBitmap = if (removeLogo) null else qrLogoBitmap,
-                customFrameBitmap = if (removeCustomFrame) null else customFrameBitmap
+                customFrameBitmap = if (removeCustomFrame) null else customFrameBitmap,
+                isBold = isBold,
+                isUppercase = isUppercase,
+                showSubtext = showSubtext,
+                qrBodyShape = qrBodyShape,
+                qrScale = qrScale,
+                qrOffsetY = qrOffsetY
             )
             val rendered = TemplateRenderer.renderTemplateBitmap(context, customization, 768, 960)
             liveRenderedBitmap = rendered
@@ -259,19 +267,27 @@ fun TemplatesScreen(
     }
 
     if (showPaywallDialog) {
+        LaunchedEffect(Unit) { billingManager.refreshProducts() }
         PaywallDialog(
+            pricingState = pricingState,
             onDismiss = { showPaywallDialog = false },
             onPurchaseLifetime = {
-                showPaywallDialog = false
-                activity?.let { billingManager.launchBillingFlow(it, com.example.billing.BillingManager.PRO_LIFETIME) }
+                val launched = activity?.let {
+                    billingManager.launchBillingFlow(it, com.example.billing.BillingManager.PRO_LIFETIME)
+                } == true
+                if (launched) showPaywallDialog = false
             },
             onPurchaseMonthly = {
-                showPaywallDialog = false
-                activity?.let { billingManager.launchBillingFlow(it, com.example.billing.BillingManager.PRO_MONTHLY) }
+                val launched = activity?.let {
+                    billingManager.launchBillingFlow(it, com.example.billing.BillingManager.PRO_MONTHLY)
+                } == true
+                if (launched) showPaywallDialog = false
             },
             onPurchaseYearly = {
-                showPaywallDialog = false
-                activity?.let { billingManager.launchBillingFlow(it, com.example.billing.BillingManager.PRO_YEARLY) }
+                val launched = activity?.let {
+                    billingManager.launchBillingFlow(it, com.example.billing.BillingManager.PRO_YEARLY)
+                } == true
+                if (launched) showPaywallDialog = false
             }
         )
     }
@@ -342,20 +358,20 @@ fun TemplatesScreen(
                                 footerAccentText = template.defaultFooterAccent ?: ""
                                 subtext = template.defaultSubtext
                                 selectedTextColor = template.defaultTextColor
-                                selectedSubtextColor = if (template.isDarkTheme) Color.LTGRAY else Color.DKGRAY
+                                selectedSubtextColor = template.defaultSubtextColor
                                 qrForegroundColor = Color.BLACK
                                 qrBackgroundColor = Color.WHITE
-                                textSizeSp = if (template.id == "escanea_aqui") 22f else 24f
+                                textSizeSp = 24f
                                 subtextSizeSp = 13f
                                 textOffsetY = 0f
                                 textOffsetX = 0f
                                 qrScale = 1.0f
                                 qrOffsetY = 0f
                                 qrBodyShape = BodyShape.SQUARE
-                                textAlign = if (template.id == "escanea_aqui") Paint.Align.LEFT else Paint.Align.CENTER
+                                textAlign = Paint.Align.CENTER
                                 isBold = true
-                                isUppercase = template.id != "escanea_aqui"
-                                showSubtext = template.id != "escanea_aqui" && template.defaultSubtext.isNotBlank()
+                                isUppercase = true
+                                showSubtext = template.defaultSubtext.isNotBlank()
                             },
                         shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(
@@ -414,6 +430,7 @@ fun TemplatesScreen(
         }
     } else {
         // --- 2. TEMPLATE EDITOR & CUSTOMIZER VIEW ---
+        BackHandler { selectedTemplateDef = null }
         val scrollState = rememberScrollState()
         val template = selectedTemplateDef!!
 
@@ -1927,6 +1944,10 @@ fun TextStudioDialog(
 }
 
 private fun saveTemplateBitmapToGallery(context: Context, bitmap: Bitmap, format: Bitmap.CompressFormat) {
+    if (bitmap.isRecycled || bitmap.width <= 0 || bitmap.height <= 0) {
+        Toast.makeText(context, "Imagen no disponible para guardar", Toast.LENGTH_SHORT).show()
+        return
+    }
     try {
         val extension = if (format == Bitmap.CompressFormat.JPEG) "jpg" else "png"
         val mimeType = if (format == Bitmap.CompressFormat.JPEG) "image/jpeg" else "image/png"
@@ -1952,14 +1973,22 @@ private fun saveTemplateBitmapToGallery(context: Context, bitmap: Bitmap, format
             fos = FileOutputStream(image)
         }
 
-        fos?.use {
+        if (fos == null) {
+            Toast.makeText(context, "Error al abrir el destino de guardado", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        fos.use {
             if (format == Bitmap.CompressFormat.JPEG) {
                 val solidBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
-                val canvas = android.graphics.Canvas(solidBitmap)
-                canvas.drawColor(Color.WHITE)
-                canvas.drawBitmap(bitmap, 0f, 0f, null)
-                solidBitmap.compress(format, 100, it)
-                solidBitmap.recycle()
+                try {
+                    val canvas = android.graphics.Canvas(solidBitmap)
+                    canvas.drawColor(Color.WHITE)
+                    canvas.drawBitmap(bitmap, 0f, 0f, null)
+                    solidBitmap.compress(format, 100, it)
+                } finally {
+                    if (!solidBitmap.isRecycled) solidBitmap.recycle()
+                }
             } else {
                 bitmap.compress(format, 100, it)
             }
@@ -1972,13 +2001,17 @@ private fun saveTemplateBitmapToGallery(context: Context, bitmap: Bitmap, format
 }
 
 private fun shareTemplateBitmap(context: Context, bitmap: Bitmap) {
+    if (bitmap.isRecycled || bitmap.width <= 0 || bitmap.height <= 0) {
+        Toast.makeText(context, "Imagen no disponible para compartir", Toast.LENGTH_SHORT).show()
+        return
+    }
     try {
         val cachePath = File(context.cacheDir, "shared_templates")
         if (!cachePath.exists()) cachePath.mkdirs()
         val file = File(cachePath, "template_qr.png")
-        val stream = FileOutputStream(file)
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
-        stream.close()
+        FileOutputStream(file).use { stream ->
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+        }
 
         val contentUri = androidx.core.content.FileProvider.getUriForFile(
             context,
@@ -2009,8 +2042,13 @@ private fun exportTemplatePdf(
     titleText: String,
     content: String
 ) {
+    if (bitmap.isRecycled || bitmap.width <= 0 || bitmap.height <= 0) {
+        Toast.makeText(context, "Imagen no disponible para exportar a PDF", Toast.LENGTH_SHORT).show()
+        return
+    }
+    val pdfDocument = PdfDocument()
+    var scaled: Bitmap? = null
     try {
-        val pdfDocument = PdfDocument()
         val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create() // Standard A4 points
         val page = pdfDocument.startPage(pageInfo)
         val canvas = page.canvas
@@ -2041,14 +2079,12 @@ private fun exportTemplatePdf(
         val marginX = (595f - (cols * stickerWidth + (cols - 1) * gapX)) / 2f
         val marginY = 85f
 
-        val scaled = Bitmap.createScaledBitmap(bitmap, stickerWidth.toInt(), stickerHeight.toInt(), true)
+        scaled = Bitmap.createScaledBitmap(bitmap, stickerWidth.toInt(), stickerHeight.toInt(), true)
 
         for (r in 0 until rows) {
             for (c in 0 until cols) {
                 val left = marginX + c * (stickerWidth + gapX)
                 val top = marginY + r * (stickerHeight + gapY)
-                
-                // Draw shadow or border if desired, but template is usually dark/colored.
                 canvas.drawBitmap(scaled, left, top, null)
             }
         }
@@ -2064,10 +2100,9 @@ private fun exportTemplatePdf(
         val cachePath = File(context.cacheDir, "shared_templates")
         if (!cachePath.exists()) cachePath.mkdirs()
         val file = File(cachePath, "plantilla_qr.pdf")
-        val stream = FileOutputStream(file)
-        pdfDocument.writeTo(stream)
-        stream.close()
-        pdfDocument.close()
+        FileOutputStream(file).use { stream ->
+            pdfDocument.writeTo(stream)
+        }
 
         val contentUri = androidx.core.content.FileProvider.getUriForFile(
             context,
@@ -2088,6 +2123,14 @@ private fun exportTemplatePdf(
     } catch (e: Exception) {
         e.printStackTrace()
         Toast.makeText(context, "Error en PDF: ${e.message}", Toast.LENGTH_SHORT).show()
+    } finally {
+        if (scaled != null && scaled !== bitmap && !scaled.isRecycled) {
+            scaled.recycle()
+        }
+        try {
+            pdfDocument.close()
+        } catch (_: Exception) {
+        }
     }
 }
 
@@ -2105,12 +2148,12 @@ fun TemplateThumbnail(
                 templateDef = template,
                 qrContent = "https://google.com",
                 titleText = template.defaultText,
-                textSizeSp = if (template.id == "escanea_aqui") 22f else 24f,
-                textAlign = if (template.id == "escanea_aqui") Paint.Align.LEFT else Paint.Align.CENTER,
+                textSizeSp = 24f,
+                textAlign = Paint.Align.CENTER,
                 textColor = template.defaultTextColor,
                 subtext = template.defaultSubtext,
                 subtextSizeSp = 13f,
-                subtextColor = if (template.isDarkTheme) Color.LTGRAY else Color.DKGRAY,
+                subtextColor = template.defaultSubtextColor,
                 qrForegroundColor = Color.BLACK,
                 qrBackgroundColor = Color.WHITE
             )

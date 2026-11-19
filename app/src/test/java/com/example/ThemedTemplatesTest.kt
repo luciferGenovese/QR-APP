@@ -25,6 +25,7 @@ class ThemedTemplatesTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val content = "https://example.com/template-check"
         val templates = TemplateRenderer.AVAILABLE_TEMPLATES
+        assertEquals(12, templates.size)
         assertTrue(templates.map { it.category }.distinct().size >= 5)
         assertEquals(templates.size, templates.map { it.id }.distinct().size)
         for (template in templates) {
@@ -35,7 +36,8 @@ class ThemedTemplatesTest {
                     qrContent = content,
                     titleText = template.defaultText,
                     subtext = template.defaultSubtext,
-                    textColor = template.defaultTextColor
+                    textColor = template.defaultTextColor,
+                    subtextColor = template.defaultSubtextColor
                 ),
                 512,
                 640

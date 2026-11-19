@@ -42,7 +42,7 @@ import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.FileUpload
-import androidx.compose.material.icons.filled.InsertDriveFile
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Call
@@ -130,6 +130,7 @@ import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Speed
 import com.google.zxing.BarcodeFormat
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 
@@ -157,22 +158,31 @@ fun GenerateScreen(
         onDispose { billingManager.terminate() }
     }
     val isPro by billingManager.isPro.collectAsState()
+    val pricingState by billingManager.pricingState.collectAsState()
     var showPaywallDialog by remember { mutableStateOf(false) }
-    
+
     if (showPaywallDialog) {
+        LaunchedEffect(Unit) { billingManager.refreshProducts() }
         PaywallDialog(
+            pricingState = pricingState,
             onDismiss = { showPaywallDialog = false },
-            onPurchaseLifetime = { 
-                showPaywallDialog = false
-                activity?.let { billingManager.launchBillingFlow(it, com.example.billing.BillingManager.PRO_LIFETIME) } 
+            onPurchaseLifetime = {
+                val launched = activity?.let {
+                    billingManager.launchBillingFlow(it, com.example.billing.BillingManager.PRO_LIFETIME)
+                } == true
+                if (launched) showPaywallDialog = false
             },
-            onPurchaseMonthly = { 
-                showPaywallDialog = false
-                activity?.let { billingManager.launchBillingFlow(it, com.example.billing.BillingManager.PRO_MONTHLY) } 
+            onPurchaseMonthly = {
+                val launched = activity?.let {
+                    billingManager.launchBillingFlow(it, com.example.billing.BillingManager.PRO_MONTHLY)
+                } == true
+                if (launched) showPaywallDialog = false
             },
-            onPurchaseYearly = { 
-                showPaywallDialog = false
-                activity?.let { billingManager.launchBillingFlow(it, com.example.billing.BillingManager.PRO_YEARLY) } 
+            onPurchaseYearly = {
+                val launched = activity?.let {
+                    billingManager.launchBillingFlow(it, com.example.billing.BillingManager.PRO_YEARLY)
+                } == true
+                if (launched) showPaywallDialog = false
             }
         )
     }
@@ -198,7 +208,7 @@ fun GenerateScreen(
                     if (s.contains("?subject=")) {
                         val parts = s.split("?subject=", limit = 2)
                         initialP1 = parts[0]
-                        initialP2 = parts.getOrNull(1) ?: ""
+                        initialP2 = Uri.decode(parts.getOrNull(1) ?: "")
                     } else {
                         initialP1 = s
                     }
@@ -208,16 +218,16 @@ fun GenerateScreen(
                     if (s.contains("?body=")) {
                         val parts = s.split("?body=", limit = 2)
                         initialP1 = parts[0]
-                        initialP2 = parts.getOrNull(1) ?: ""
+                        initialP2 = Uri.decode(parts.getOrNull(1) ?: "")
                     } else {
                         initialP1 = s
                     }
                 }
                 "QR_WIFI", "QR_WIFI_PRO" -> {
-                    val s = raw.removePrefix("WIFI:")
-                    initialP1 = Regex("S:([^;]*)").find(s)?.groupValues?.getOrNull(1) ?: ""
-                    initialP2 = Regex("P:([^;]*)").find(s)?.groupValues?.getOrNull(1) ?: ""
-                    initialP3 = Regex("T:([^;]*)").find(s)?.groupValues?.getOrNull(1) ?: "WPA"
+                    val parsedWifi = parseWifiForEditor(raw)
+                    initialP1 = parsedWifi.first
+                    initialP2 = parsedWifi.second
+                    initialP3 = parsedWifi.third
                 }
                 "QR_CONTACT" -> {
                     initialP1 = Regex("N:([^\n]*)").find(raw)?.groupValues?.getOrNull(1) ?: ""
@@ -242,8 +252,8 @@ fun GenerateScreen(
                     initialP1 = "OFICIAL"
                 }
                 "QR_SECRET" -> {
-                    initialSecretMsg = raw
                     initialContent = raw
+                    initialSecretMsg = if (SecretQrHelper.isSecretQr(raw)) "" else raw
                 }
                 else -> {
                     initialContent = raw
@@ -264,13 +274,15 @@ fun GenerateScreen(
         } else null
     }
     var generatedBitmap by remember { mutableStateOf<Bitmap?>(initialBitmap) }
+    var livePreviewBitmap by remember { mutableStateOf<Bitmap?>(null) }
     
     val storagePermissionState = rememberPermissionState(Manifest.permission.WRITE_EXTERNAL_STORAGE)
     var pendingBitmapFormat by remember { mutableStateOf<Bitmap.CompressFormat?>(null) }
     
     LaunchedEffect(storagePermissionState.status) {
-        if (storagePermissionState.status.isGranted && pendingBitmapFormat != null && generatedBitmap != null) {
-            saveBitmapToGallery(context, generatedBitmap!!, pendingBitmapFormat!!)
+        val bmpToSave = generatedBitmap ?: livePreviewBitmap
+        if (storagePermissionState.status.isGranted && pendingBitmapFormat != null && bmpToSave != null) {
+            saveBitmapToGallery(context, bmpToSave, pendingBitmapFormat!!)
             pendingBitmapFormat = null
         }
     }
@@ -286,9 +298,13 @@ fun GenerateScreen(
     var p3 by remember(parsedInitialValues) { mutableStateOf(parsedInitialValues[3]) }
 
     // Secret QR State
+    val isEditingEncryptedSecret = editingCode != null && type == "QR_SECRET" && SecretQrHelper.isSecretQr(editingCode.content)
     var secretMessage by remember(parsedInitialValues) { mutableStateOf(parsedInitialValues[4]) }
     var secretPin by remember { mutableStateOf("") }
     var isSecretPinVisible by remember { mutableStateOf(false) }
+    var unlockPinInput by remember { mutableStateOf("") }
+    var unlockError by remember { mutableStateOf<String?>(null) }
+    val coroutineScope = rememberCoroutineScope()
 
     // vCard Pro State
     var vcardOrg by remember(parsedInitialValues) { mutableStateOf(parsedInitialValues[5]) }
@@ -368,41 +384,60 @@ fun GenerateScreen(
     val filePickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         selectedFileUri = uri
         if (uri != null) {
-            try {
-                // Get filename
-                val cursor = context.contentResolver.query(uri, null, null, null, null)
-                var fName = "file"
-                cursor?.use {
-                    if (it.moveToFirst()) {
-                        val nameIndex = it.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-                        if (nameIndex >= 0) {
-                            fName = it.getString(nameIndex)
+            coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                try {
+                    var fName = "file"
+                    context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                        if (cursor.moveToFirst()) {
+                            val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                            if (nameIndex >= 0) {
+                                fName = cursor.getString(nameIndex) ?: "file"
+                            }
                         }
                     }
-                }
-                val safeFileName = fName.replace("|", "_")
-                selectedFileName = safeFileName
-                
-                // Read chunks
-                val inputStream = context.contentResolver.openInputStream(uri)
-                if (inputStream != null) {
-                    val bytes = inputStream.readBytes()
-                    inputStream.close()
-                    
-                    val encoded = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
-                    // Split into readable chunks of 220 chars for optimal optical scanning
-                    val chunkSize = 220
-                    val chunks = encoded.chunked(chunkSize)
-                    
-                    val formattedChunks = chunks.mapIndexed { index, chunk ->
-                        "ANIM_QR|${chunks.size}|$index|$safeFileName|$chunk"
+                    val safeFileName = fName.replace("|", "_")
+                    val maxFileBytes = 256 * 1024
+                    val bytes = context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                        val buffer = java.io.ByteArrayOutputStream()
+                        val data = ByteArray(8192)
+                        var total = 0
+                        while (true) {
+                            val read = inputStream.read(data)
+                            if (read == -1) break
+                            total += read
+                            if (total > maxFileBytes) {
+                                return@use null
+                            }
+                            buffer.write(data, 0, read)
+                        }
+                        buffer.toByteArray()
                     }
-                    fileChunks = formattedChunks
-                    currentChunkIndex = 0
-                    isAnimating = true
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        if (bytes == null) {
+                            Toast.makeText(
+                                context,
+                                "El archivo supera 256 KB. Usa Transferir por QR Óptico para archivos grandes.",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        } else {
+                            selectedFileName = safeFileName
+                            val encoded = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+                            val chunkSize = 220
+                            val chunks = encoded.chunked(chunkSize)
+                            val formattedChunks = chunks.mapIndexed { index, chunk ->
+                                "ANIM_QR|${chunks.size}|$index|$safeFileName|$chunk"
+                            }
+                            fileChunks = formattedChunks
+                            currentChunkIndex = 0
+                            isAnimating = formattedChunks.isNotEmpty()
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        Toast.makeText(context, "Error al leer el archivo seleccionado", Toast.LENGTH_SHORT).show()
+                    }
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
         }
     }
@@ -449,16 +484,6 @@ fun GenerateScreen(
             }
         }
     }
-
-    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-        if (isGranted) {
-            logoPickerLauncher.launch("image/*")
-        } else {
-            Toast.makeText(context, context.getString(R.string.toast_gallery_denied), Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    var livePreviewBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var cachedTemplateBitmap by remember(templateResId) { mutableStateOf<Bitmap?>(null) }
 
     var selectedTemplateDef by remember { mutableStateOf<TemplateItemDef?>(null) }
@@ -498,43 +523,49 @@ fun GenerateScreen(
         }
     }
 
-    LaunchedEffect(content, secretMessage, secretPin, selectedForegroundColor, selectedBackgroundColor, selectedBodyShape, selectedLogoBitmap, type, removeLogo, cachedTemplateBitmap, currentChunkIndex, fileChunks, selectedTemplateDef, customTitleText, customSubText, selectedErrorCorrectionLevel, selectedLogoSizeRatio, selectedLogoBadgeShape, customEmojiText) {
-        val currentContent = if (type == "QR_SECRET") {
-            if (secretMessage.isNotBlank() && secretPin.isNotBlank()) {
-                SecretQrHelper.encrypt(secretMessage, secretPin)
-            } else if (secretMessage.isNotBlank()) {
-                SecretQrHelper.encrypt(secretMessage, "preview_key")
+    LaunchedEffect(content, p1, secretMessage, secretPin, selectedForegroundColor, selectedBackgroundColor, selectedBodyShape, selectedLogoBitmap, type, removeLogo, cachedTemplateBitmap, currentChunkIndex, fileChunks, selectedTemplateDef, customTitleText, customSubText, selectedErrorCorrectionLevel, selectedLogoSizeRatio, selectedLogoBadgeShape, customEmojiText) {
+        val resultBitmap = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            val currentContent = if (type == "QR_SECRET") {
+                if (secretMessage.isNotBlank() && secretPin.isNotBlank()) {
+                    SecretQrHelper.encrypt(secretMessage, secretPin)
+                } else if (secretMessage.isNotBlank()) {
+                    SecretQrHelper.encrypt(secretMessage, "preview_key")
+                } else if (isEditingEncryptedSecret) {
+                    content
+                } else {
+                    ""
+                }
+            } else if (type == "QR_ANIMATED" && fileChunks.isNotEmpty()) {
+                fileChunks[currentChunkIndex]
             } else {
-                ""
+                content
             }
-        } else if (type == "QR_ANIMATED" && fileChunks.isNotEmpty()) {
-            fileChunks[currentChunkIndex]
-        } else {
-            content
-        }
-        
-        if (currentContent.isNotBlank()) {
-            val format = when (type) {
-                "EAN_8" -> BarcodeFormat.EAN_8
-                "EAN_13" -> BarcodeFormat.EAN_13
-                "UPC_E" -> BarcodeFormat.UPC_E
-                "UPC_A" -> BarcodeFormat.UPC_A
-                "CODE_39" -> BarcodeFormat.CODE_39
-                "CODE_93" -> BarcodeFormat.CODE_93
-                "CODE_128", "BARCODE_128" -> BarcodeFormat.CODE_128
-                "ITF" -> BarcodeFormat.ITF
-                "PDF_417" -> BarcodeFormat.PDF_417
-                "CODABAR" -> BarcodeFormat.CODABAR
-                "DATA_MATRIX" -> BarcodeFormat.DATA_MATRIX
-                "AZTEC" -> BarcodeFormat.AZTEC
-                else -> BarcodeFormat.QR_CODE
-            }
-            
-            val is1DBarcode = type in listOf("EAN_8", "EAN_13", "UPC_E", "UPC_A", "CODE_39", "CODE_93", "CODE_128", "BARCODE_128", "ITF", "CODABAR", "PDF_417")
-            val bw = if (is1DBarcode) 600 else 512
-            val bh = if (is1DBarcode) 300 else 512
-            
-            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+
+            if (currentContent.isBlank()) {
+                null
+            } else {
+                val format = when (type) {
+                    "EAN_8" -> BarcodeFormat.EAN_8
+                    "EAN_13" -> BarcodeFormat.EAN_13
+                    "UPC_E" -> BarcodeFormat.UPC_E
+                    "UPC_A" -> BarcodeFormat.UPC_A
+                    "CODE_39" -> BarcodeFormat.CODE_39
+                    "CODE_93" -> BarcodeFormat.CODE_93
+                    "CODE_128", "BARCODE_128" -> BarcodeFormat.CODE_128
+                    "ITF" -> BarcodeFormat.ITF
+                    "PDF_417" -> BarcodeFormat.PDF_417
+                    "CODABAR" -> BarcodeFormat.CODABAR
+                    "DATA_MATRIX" -> BarcodeFormat.DATA_MATRIX
+                    "AZTEC" -> BarcodeFormat.AZTEC
+                    else -> BarcodeFormat.QR_CODE
+                }
+
+                val is1DBarcode = type in listOf("EAN_8", "EAN_13", "UPC_E", "UPC_A", "CODE_39", "CODE_93", "CODE_128", "BARCODE_128", "ITF", "CODABAR", "PDF_417")
+                val bw = if (is1DBarcode) 600 else 512
+                val bh = if (is1DBarcode) 300 else 512
+                val effectiveEcc = if (type == "QR_WATERMARK") ErrorCorrectionLevel.H else selectedErrorCorrectionLevel
+                val logoForQr = if (removeLogo) null else (selectedLogoBitmap ?: getSocialLogo(context, type))
+
                 val rawBitmap = CodeGenerator.generateBitmap(
                     content = currentContent,
                     format = format,
@@ -543,40 +574,53 @@ fun GenerateScreen(
                     foregroundColor = selectedForegroundColor,
                     backgroundColor = selectedBackgroundColor,
                     bodyShape = selectedBodyShape,
-                    logoBitmap = if (removeLogo) null else (selectedLogoBitmap ?: getSocialLogo(context, type)),
-                    errorCorrectionLevel = selectedErrorCorrectionLevel,
+                    logoBitmap = logoForQr,
+                    errorCorrectionLevel = effectiveEcc,
                     logoSizeRatio = selectedLogoSizeRatio,
                     logoBadgeShape = selectedLogoBadgeShape,
                     customEmoji = customEmojiText
                 )
-                val preview = if (selectedTemplateDef != null && rawBitmap != null) {
+
+                val watermarkedOrRaw = if (type == "QR_WATERMARK" && rawBitmap != null) {
+                    val marked = CodeGenerator.applyWatermarkOverlay(rawBitmap, p1.ifBlank { "OFICIAL" })
+                    if (marked !== rawBitmap && !rawBitmap.isRecycled) rawBitmap.recycle()
+                    marked
+                } else {
+                    rawBitmap
+                }
+
+                val preview = if (selectedTemplateDef != null && watermarkedOrRaw != null) {
                     try {
                         val custom = TemplateCustomization(
                             templateDef = selectedTemplateDef!!,
                             qrContent = currentContent,
                             titleText = customTitleText.ifBlank { selectedTemplateDef!!.defaultText },
                             subtext = customSubText.ifBlank { selectedTemplateDef!!.defaultSubtext },
+                            textColor = selectedTemplateDef!!.defaultTextColor,
+                            subtextColor = selectedTemplateDef!!.defaultSubtextColor,
                             qrForegroundColor = selectedForegroundColor,
                             qrBackgroundColor = selectedBackgroundColor,
-                            logoBitmap = if (type == "Wifi" || type == "Email" || type == "SMS" || type == "VCard" || type == "Text" || type == "Event") null else (selectedLogoBitmap ?: getSocialLogo(context, type))
+                            qrBodyShape = selectedBodyShape,
+                            logoBitmap = logoForQr,
+                            logoSizeMultiplier = selectedLogoSizeRatio,
+                            watermarkText = if (type == "QR_WATERMARK") p1.ifBlank { "OFICIAL" } else null
                         )
                         TemplateRenderer.renderTemplateBitmap(context, custom, 1024, 1280)
                     } catch (e: Exception) {
-                        rawBitmap
+                        watermarkedOrRaw
                     }
                 } else {
-                    rawBitmap
+                    watermarkedOrRaw
                 }
-                
-                livePreviewBitmap = if (cachedTemplateBitmap != null && preview != null) {
+
+                if (cachedTemplateBitmap != null && preview != null) {
                     compositeWithCachedTemplate(cachedTemplateBitmap!!, preview)
                 } else {
                     preview
                 }
             }
-        } else {
-            livePreviewBitmap = null
         }
+        livePreviewBitmap = resultBitmap
     }
 
     val scrollState = rememberScrollState()
@@ -636,13 +680,16 @@ fun GenerateScreen(
 
         when (type) {
             "QR_SECRET" -> {
-                if (secretMessage.isBlank()) {
-                    p1Error = "Ingresa el mensaje confidencial o secreto"
-                    isValid = false
-                }
-                if (secretPin.isBlank()) {
-                    p2Error = context.getString(R.string.err_pin_empty)
-                    isValid = false
+                val keepExistingCiphertext = isEditingEncryptedSecret && secretMessage.isBlank() && secretPin.isBlank()
+                if (!keepExistingCiphertext) {
+                    if (secretMessage.isBlank()) {
+                        p1Error = "Ingresa el mensaje confidencial o secreto"
+                        isValid = false
+                    }
+                    if (secretPin.isBlank()) {
+                        p2Error = context.getString(R.string.err_pin_empty)
+                        isValid = false
+                    }
                 }
             }
             "QR_VCARD_PRO" -> {
@@ -691,7 +738,7 @@ fun GenerateScreen(
                     p1Error = context.getString(R.string.err_invalid_url)
                     isValid = false
                 } else {
-                    val targetUrl = if (p1.startsWith("http")) p1 else "https://$p1"
+                    val targetUrl = if (p1.startsWith("http://", ignoreCase = true) || p1.startsWith("https://", ignoreCase = true)) p1 else "https://$p1"
                     if (!android.util.Patterns.WEB_URL.matcher(targetUrl).matches()) {
                         p1Error = context.getString(R.string.err_invalid_url)
                         isValid = false
@@ -762,6 +809,8 @@ fun GenerateScreen(
             val is1DBarcode = type in listOf("EAN_8", "EAN_13", "UPC_E", "UPC_A", "CODE_39", "CODE_93", "CODE_128", "BARCODE_128", "ITF", "CODABAR", "PDF_417")
             val bw = if (is1DBarcode) 800 else 512
             val bh = if (is1DBarcode) 400 else 512
+            val effectiveEcc = if (type == "QR_WATERMARK") ErrorCorrectionLevel.H else selectedErrorCorrectionLevel
+            val logoForQr = if (removeLogo) null else (selectedLogoBitmap ?: getSocialLogo(context, type))
             
             try {
                 val contentToEncode = when (type) {
@@ -777,12 +826,20 @@ fun GenerateScreen(
                     foregroundColor = selectedForegroundColor,
                     backgroundColor = selectedBackgroundColor,
                     bodyShape = selectedBodyShape,
-                    logoBitmap = if (removeLogo) null else (selectedLogoBitmap ?: getSocialLogo(context, type)),
-                    errorCorrectionLevel = selectedErrorCorrectionLevel,
+                    logoBitmap = logoForQr,
+                    errorCorrectionLevel = effectiveEcc,
                     logoSizeRatio = selectedLogoSizeRatio,
                     logoBadgeShape = selectedLogoBadgeShape,
                     customEmoji = customEmojiText
                 )
+
+                val markedOrRaw = if (type == "QR_WATERMARK") {
+                    val marked = CodeGenerator.applyWatermarkOverlay(rawBitmap, p1.ifBlank { "OFICIAL" })
+                    if (marked !== rawBitmap && !rawBitmap.isRecycled) rawBitmap.recycle()
+                    marked
+                } else {
+                    rawBitmap
+                }
                 
                 val finalRender = if (selectedTemplateDef != null) {
                     try {
@@ -791,16 +848,21 @@ fun GenerateScreen(
                             qrContent = contentToEncode,
                             titleText = customTitleText.ifBlank { selectedTemplateDef!!.defaultText },
                             subtext = customSubText.ifBlank { selectedTemplateDef!!.defaultSubtext },
+                            textColor = selectedTemplateDef!!.defaultTextColor,
+                            subtextColor = selectedTemplateDef!!.defaultSubtextColor,
                             qrForegroundColor = selectedForegroundColor,
                             qrBackgroundColor = selectedBackgroundColor,
-                            logoBitmap = if (type == "Wifi" || type == "Email" || type == "SMS" || type == "VCard" || type == "Text" || type == "Event") null else (selectedLogoBitmap ?: getSocialLogo(context, type))
+                            qrBodyShape = selectedBodyShape,
+                            logoBitmap = logoForQr,
+                            logoSizeMultiplier = selectedLogoSizeRatio,
+                            watermarkText = if (type == "QR_WATERMARK") p1.ifBlank { "OFICIAL" } else null
                         )
                         TemplateRenderer.renderTemplateBitmap(context, custom, 1024, 1280)
                     } catch (e: Exception) {
-                        rawBitmap
+                        markedOrRaw
                     }
                 } else {
-                    rawBitmap
+                    markedOrRaw
                 }
                 
                 generatedBitmap = if (cachedTemplateBitmap != null) {
@@ -907,15 +969,7 @@ fun GenerateScreen(
                                                 }
                                                 if (!receivedChunks.containsKey(idx)) {
                                                     receivedChunks[idx] = data
-                                                    val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? android.os.Vibrator
-                                                    try {
-                                                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                                                            vibrator?.vibrate(android.os.VibrationEffect.createOneShot(25, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
-                                                        } else {
-                                                            @Suppress("DEPRECATION")
-                                                            vibrator?.vibrate(25)
-                                                        }
-                                                    } catch (e: Exception) {}
+                                                    com.example.utils.HapticUtil.playSuccessHaptic(context)
                                                 }
                                             }
                                         }
@@ -1227,16 +1281,21 @@ fun GenerateScreen(
                                                 }
                                                 Toast.makeText(context, "Archivo guardado en Descargas: $fName", Toast.LENGTH_LONG).show()
                                                 receivingAnimatedQr = false
+                                                totalAnimatedChunks = 0
+                                                animatedFileName = ""
                                                 receivedChunks.clear()
                                             } ?: run {
                                                 Toast.makeText(context, "Error al crear archivo", Toast.LENGTH_SHORT).show()
                                             }
                                         } else {
                                             val downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+                                            if (!downloadsDir.exists()) downloadsDir.mkdirs()
                                             val file = java.io.File(downloadsDir, fName)
                                             java.io.FileOutputStream(file).use { it.write(bytes) }
                                             Toast.makeText(context, "Archivo guardado en Descargas: $fName", Toast.LENGTH_LONG).show()
                                             receivingAnimatedQr = false
+                                            totalAnimatedChunks = 0
+                                            animatedFileName = ""
                                             receivedChunks.clear()
                                         }
                                     } catch (e: Exception) {
@@ -1299,6 +1358,49 @@ fun GenerateScreen(
                     }
                 }
 
+                if (isEditingEncryptedSecret && secretMessage.isBlank()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.7f))
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(
+                                "Código cifrado existente: ingresa tu PIN actual para descifrar y editar el texto, o escribe un nuevo mensaje y PIN abajo.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                OutlinedTextField(
+                                    value = unlockPinInput,
+                                    onValueChange = { unlockPinInput = it; unlockError = null },
+                                    label = { Text("PIN actual") },
+                                    singleLine = true,
+                                    visualTransformation = PasswordVisualTransformation(),
+                                    isError = unlockError != null,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Button(onClick = {
+                                    val decrypted = SecretQrHelper.decrypt(editingCode!!.content, unlockPinInput)
+                                    if (!decrypted.isNullOrEmpty()) {
+                                        secretMessage = decrypted
+                                        secretPin = unlockPinInput
+                                        unlockPinInput = ""
+                                        unlockError = null
+                                    } else {
+                                        unlockError = "PIN incorrecto"
+                                    }
+                                }) {
+                                    Text("Desbloquear")
+                                }
+                            }
+                            if (unlockError != null) {
+                                Text(unlockError!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 4.dp))
+                            }
+                        }
+                    }
+                }
+
                 OutlinedTextField(
                     value = secretMessage,
                     onValueChange = { secretMessage = it; p1Error = null },
@@ -1330,7 +1432,6 @@ fun GenerateScreen(
                         }
                     }
                 )
-                content = if (secretMessage.isNotBlank() && secretPin.isNotBlank()) SecretQrHelper.encrypt(secretMessage, secretPin) else ""
             }
             "QR_VCARD_PRO" -> {
                 OutlinedTextField(
@@ -1373,14 +1474,18 @@ fun GenerateScreen(
                     label = { Text("Sitio Web o Perfil") },
                     modifier = Modifier.fillMaxWidth()
                 )
-                content = buildString {
-                    append("BEGIN:VCARD\nVERSION:3.0\n")
-                    append("FN:$p1\nN:$p1;;;;\n")
-                    if (p2.isNotBlank()) append("TEL;TYPE=CELL:$p2\n")
-                    if (p3.isNotBlank()) append("EMAIL:$p3\n")
-                    if (vcardOrg.isNotBlank()) append("ORG:$vcardOrg\n")
-                    if (vcardUrl.isNotBlank()) append("URL:$vcardUrl\n")
-                    append("END:VCARD")
+                content = if (p1.isBlank() && p2.isBlank() && p3.isBlank() && vcardOrg.isBlank() && vcardUrl.isBlank()) {
+                    ""
+                } else {
+                    buildString {
+                        append("BEGIN:VCARD\nVERSION:3.0\n")
+                        append("FN:$p1\nN:$p1;;;;\n")
+                        if (p2.isNotBlank()) append("TEL;TYPE=CELL:$p2\n")
+                        if (p3.isNotBlank()) append("EMAIL:$p3\n")
+                        if (vcardOrg.isNotBlank()) append("ORG:$vcardOrg\n")
+                        if (vcardUrl.isNotBlank()) append("URL:$vcardUrl\n")
+                        append("END:VCARD")
+                    }
                 }
             }
             "QR_WIFI_PRO" -> {
@@ -1409,7 +1514,7 @@ fun GenerateScreen(
                     placeholder = { Text("WPA") },
                     modifier = Modifier.fillMaxWidth()
                 )
-                content = "WIFI:S:$p1;T:${p3.ifEmpty { "WPA" }};P:$p2;;"
+                content = if (p1.isBlank()) "" else "WIFI:S:${escapeWifiField(p1)};T:${p3.ifEmpty { "WPA" }};P:${escapeWifiField(p2)};;"
             }
             "QR_STICKERS" -> {
                 OutlinedTextField(
@@ -1431,10 +1536,11 @@ fun GenerateScreen(
                 )
                 content = p2
                 
-                if (livePreviewBitmap != null) {
+                val previewBmp = livePreviewBitmap
+                if (previewBmp != null) {
                     Spacer(modifier = Modifier.height(12.dp))
                     Button(
-                        onClick = { com.example.utils.HapticUtil.playSuccessHaptic(context); exportStickerSheetPdf(context, livePreviewBitmap!!, p1.ifEmpty { "QR Stickers" }, p2) },
+                        onClick = { com.example.utils.HapticUtil.playSuccessHaptic(context); exportStickerSheetPdf(context, previewBmp, p1.ifEmpty { "QR Stickers" }, p2) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
                     ) {
@@ -1481,7 +1587,7 @@ fun GenerateScreen(
                     ) {
                         Column(modifier = Modifier.padding(14.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Filled.InsertDriveFile, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                Icon(Icons.AutoMirrored.Filled.InsertDriveFile, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                 Spacer(Modifier.width(8.dp))
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
@@ -1677,7 +1783,7 @@ fun GenerateScreen(
                     supportingText = p3Error?.let { { Text(it) } },
                     modifier = Modifier.fillMaxWidth()
                 )
-                content = "WIFI:S:$p1;T:${p3.ifEmpty { "WPA" }};P:$p2;;"
+                content = if (p1.isBlank()) "" else "WIFI:S:${escapeWifiField(p1)};T:${p3.ifEmpty { "WPA" }};P:${escapeWifiField(p2)};;"
             }
             "QR_PHONE" -> {
                 OutlinedTextField(
@@ -1688,7 +1794,7 @@ fun GenerateScreen(
                     supportingText = p1Error?.let { { Text(it) } },
                     modifier = Modifier.fillMaxWidth()
                 )
-                content = "tel:$p1"
+                content = if (p1.isBlank()) "" else "tel:$p1"
             }
             "QR_WHATSAPP" -> {
                 OutlinedTextField(
@@ -1699,7 +1805,8 @@ fun GenerateScreen(
                     supportingText = p1Error?.let { { Text(it) } },
                     modifier = Modifier.fillMaxWidth()
                 )
-                content = "https://wa.me/${p1.replace(Regex("[^0-9]"), "")}"
+                val waDigits = p1.replace(Regex("[^0-9]"), "")
+                content = if (waDigits.isBlank()) "" else "https://wa.me/$waDigits"
             }
             "QR_URL" -> {
                 OutlinedTextField(
@@ -1710,7 +1817,7 @@ fun GenerateScreen(
                     supportingText = p1Error?.let { { Text(it) } },
                     modifier = Modifier.fillMaxWidth()
                 )
-                content = if (p1.startsWith("http")) p1 else "https://$p1"
+                content = if (p1.isBlank()) "" else if (p1.startsWith("http://", ignoreCase = true) || p1.startsWith("https://", ignoreCase = true)) p1 else "https://$p1"
             }
             "QR_EMAIL" -> {
                 OutlinedTextField(
@@ -1730,7 +1837,7 @@ fun GenerateScreen(
                     supportingText = p2Error?.let { { Text(it) } },
                     modifier = Modifier.fillMaxWidth()
                 )
-                content = "mailto:$p1?subject=$p2"
+                content = if (p1.isBlank()) "" else if (p2.isBlank()) "mailto:$p1" else "mailto:$p1?subject=${Uri.encode(p2)}"
             }
             "QR_SMS" -> {
                 OutlinedTextField(
@@ -1748,7 +1855,7 @@ fun GenerateScreen(
                     label = { Text(stringResource(R.string.label_body_sms)) },
                     modifier = Modifier.fillMaxWidth()
                 )
-                content = "sms:$p1?body=$p2"
+                content = if (p1.isBlank()) "" else if (p2.isBlank()) "sms:$p1" else "sms:$p1?body=${Uri.encode(p2)}"
             }
             "QR_CONTACT" -> {
                 OutlinedTextField(
@@ -1777,7 +1884,7 @@ fun GenerateScreen(
                     supportingText = p3Error?.let { { Text(it) } },
                     modifier = Modifier.fillMaxWidth()
                 )
-                content = "BEGIN:VCARD\nVERSION:3.0\nN:$p1\nTEL:$p2\nEMAIL:$p3\nEND:VCARD"
+                content = if (p1.isBlank() && p2.isBlank() && p3.isBlank()) "" else "BEGIN:VCARD\nVERSION:3.0\nN:$p1\nTEL:$p2\nEMAIL:$p3\nEND:VCARD"
             }
             else -> {
                 val isNumericBarcode = type in listOf("EAN_8", "EAN_13", "UPC_E", "UPC_A", "ITF")
@@ -1978,8 +2085,12 @@ fun GenerateScreen(
                                                             selectedTemplateDef = templateDef
                                                             selectedForegroundColor = android.graphics.Color.BLACK
                                                             selectedBackgroundColor = android.graphics.Color.WHITE
-                                                            if (customTitleText.isBlank()) customTitleText = templateDef.defaultText
-                                                            if (customSubText.isBlank()) customSubText = templateDef.defaultSubtext
+                                                            if (customTitleText.isBlank() || TemplateRenderer.AVAILABLE_TEMPLATES.any { it.defaultText == customTitleText }) {
+                                                                customTitleText = templateDef.defaultText
+                                                            }
+                                                            if (customSubText.isBlank() || TemplateRenderer.AVAILABLE_TEMPLATES.any { it.defaultSubtext == customSubText }) {
+                                                                customSubText = templateDef.defaultSubtext
+                                                            }
                                                         }
                                                     }
                                                 },
@@ -2214,14 +2325,10 @@ fun GenerateScreen(
                                             .fillMaxWidth()
                                             .clickable {
                                                 if (isPro) {
-                                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                                            logoPickerLauncher.launch("image/*")
-                                                        } else {
-                                                            permissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
-                                                        }
-                                                    } else {
-                                                        showPaywallDialog = true
-                                                    }
+                                                    logoPickerLauncher.launch("image/*")
+                                                } else {
+                                                    showPaywallDialog = true
+                                                }
                                             },
                                         shape = RoundedCornerShape(16.dp),
                                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)),
@@ -2264,11 +2371,7 @@ fun GenerateScreen(
                                             Button(
                                                 onClick = {
                                                     if (isPro) {
-                                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                                            logoPickerLauncher.launch("image/*")
-                                                        } else {
-                                                            permissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
-                                                        }
+                                                        logoPickerLauncher.launch("image/*")
                                                     } else {
                                                         showPaywallDialog = true
                                                     }
@@ -3491,11 +3594,12 @@ fun GenerateScreen(
                                     backgroundColor = selectedBackgroundColor,
                                     bodyShape = selectedBodyShape,
                                     logoBitmap = logoToUse,
-                                    ecc = selectedErrorCorrectionLevel,
+                                    ecc = if (type == "QR_WATERMARK") ErrorCorrectionLevel.H else selectedErrorCorrectionLevel,
                                     logoSizeRatio = selectedLogoSizeRatio,
                                     logoBadgeShape = selectedLogoBadgeShape,
                                     targetDimension = resPx,
-                                    customEmoji = customEmojiText
+                                    customEmoji = customEmojiText,
+                                    watermarkText = if (type == "QR_WATERMARK") p1.ifBlank { "OFICIAL" } else null
                                 )
                                 showExportResolutionModal = false
                             },
@@ -3517,6 +3621,10 @@ fun GenerateScreen(
 }
 
 private fun saveBitmapToGallery(context: Context, bitmap: Bitmap, format: Bitmap.CompressFormat) {
+    if (bitmap.isRecycled || bitmap.width <= 0 || bitmap.height <= 0) {
+        Toast.makeText(context, context.getString(R.string.toast_cant_generate), Toast.LENGTH_SHORT).show()
+        return
+    }
     try {
         val filename = "QROFICIAL_${System.currentTimeMillis()}.${if (format == Bitmap.CompressFormat.JPEG) "jpg" else "png"}"
         val mimeType = if (format == Bitmap.CompressFormat.JPEG) "image/jpeg" else "image/png"
@@ -3534,22 +3642,28 @@ private fun saveBitmapToGallery(context: Context, bitmap: Bitmap, format: Bitmap
                 fos = resolver.openOutputStream(imageUri)
             }
         } else {
-            val imagesDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS).toString()
-            val fileDir = File(imagesDir)
+            val fileDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
             if (!fileDir.exists()) fileDir.mkdirs()
-            val image = File(imagesDir, filename)
+            val image = File(fileDir, filename)
             fos = FileOutputStream(image)
         }
         
-        fos?.use {
+        if (fos == null) {
+            Toast.makeText(context, "Error al guardar la imagen en Descargas", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        fos.use {
             if (format == Bitmap.CompressFormat.JPEG) {
-                // Background needs to be white for JPEG as it doesn't support alpha
-                val newBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height, bitmap.config ?: Bitmap.Config.ARGB_8888)
-                val canvas = android.graphics.Canvas(newBitmap)
-                canvas.drawColor(android.graphics.Color.WHITE)
-                canvas.drawBitmap(bitmap, 0f, 0f, null)
-                newBitmap.compress(format, 100, it)
-                newBitmap.recycle()
+                val newBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+                try {
+                    val canvas = android.graphics.Canvas(newBitmap)
+                    canvas.drawColor(android.graphics.Color.WHITE)
+                    canvas.drawBitmap(bitmap, 0f, 0f, null)
+                    newBitmap.compress(format, 100, it)
+                } finally {
+                    newBitmap.recycle()
+                }
             } else {
                 bitmap.compress(format, 100, it)
             }
@@ -3562,15 +3676,19 @@ private fun saveBitmapToGallery(context: Context, bitmap: Bitmap, format: Bitmap
 }
 
 private fun shareBitmap(context: Context, bitmap: Bitmap) {
+    if (bitmap.isRecycled || bitmap.width <= 0 || bitmap.height <= 0) {
+        Toast.makeText(context, context.getString(R.string.toast_cant_generate), Toast.LENGTH_SHORT).show()
+        return
+    }
     try {
         val cachePath = File(context.cacheDir, "shared_images")
         if (!cachePath.exists()) {
             cachePath.mkdirs()
         }
         val file = File(cachePath, "shared_code.png")
-        val stream = FileOutputStream(file)
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
-        stream.close()
+        FileOutputStream(file).use { stream ->
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+        }
 
         val contentUri = androidx.core.content.FileProvider.getUriForFile(
             context,
@@ -3595,9 +3713,14 @@ private fun shareBitmap(context: Context, bitmap: Bitmap) {
 }
 
 private fun exportPdf(context: Context, bitmap: Bitmap, typeTitle: String, content: String) {
+    if (bitmap.isRecycled || bitmap.width <= 0 || bitmap.height <= 0) {
+        Toast.makeText(context, context.getString(R.string.toast_cant_generate), Toast.LENGTH_SHORT).show()
+        return
+    }
+    val pdfDocument = PdfDocument()
+    var scaledBitmap: Bitmap? = null
     try {
-        val pdfDocument = PdfDocument()
-        val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create() // Page size A3/A4 representation (595 x 842 pt)
+        val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
         val page = pdfDocument.startPage(pageInfo)
         val canvas = page.canvas
 
@@ -3638,7 +3761,7 @@ private fun exportPdf(context: Context, bitmap: Bitmap, typeTitle: String, conte
         val left = (595f - scaledWidth) / 2
         val top = currentY + 45f
         
-        val scaledBitmap = Bitmap.createScaledBitmap(bitmap, scaledWidth, scaledHeight, true)
+        scaledBitmap = Bitmap.createScaledBitmap(bitmap, scaledWidth, scaledHeight, true)
         canvas.drawBitmap(scaledBitmap, left, top, paint)
 
         // Standard PDF watermark footer
@@ -3653,10 +3776,9 @@ private fun exportPdf(context: Context, bitmap: Bitmap, typeTitle: String, conte
             cachePath.mkdirs()
         }
         val file = File(cachePath, "shared_code.pdf")
-        val stream = FileOutputStream(file)
-        pdfDocument.writeTo(stream)
-        stream.close()
-        pdfDocument.close()
+        FileOutputStream(file).use { stream ->
+            pdfDocument.writeTo(stream)
+        }
 
         val contentUri = androidx.core.content.FileProvider.getUriForFile(
             context,
@@ -3676,13 +3798,23 @@ private fun exportPdf(context: Context, bitmap: Bitmap, typeTitle: String, conte
     } catch (e: Exception) {
         e.printStackTrace()
         Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+    } finally {
+        if (scaledBitmap != null && scaledBitmap !== bitmap && !scaledBitmap.isRecycled) {
+            scaledBitmap.recycle()
+        }
+        pdfDocument.close()
     }
 }
 
 private fun exportStickerSheetPdf(context: Context, bitmap: Bitmap, title: String, content: String) {
+    if (bitmap.isRecycled || bitmap.width <= 0 || bitmap.height <= 0) {
+        Toast.makeText(context, context.getString(R.string.toast_cant_generate), Toast.LENGTH_SHORT).show()
+        return
+    }
+    val pdfDocument = PdfDocument()
+    var scaledBitmap: Bitmap? = null
     try {
-        val pdfDocument = PdfDocument()
-        val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create() // Standard A4 (595 x 842 pt)
+        val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
         val page = pdfDocument.startPage(pageInfo)
         val canvas = page.canvas
         val paint = Paint()
@@ -3709,7 +3841,7 @@ private fun exportStickerSheetPdf(context: Context, bitmap: Bitmap, title: Strin
         val gapY = 15f
 
         val qrSize = 105
-        val scaledBitmap = Bitmap.createScaledBitmap(bitmap, qrSize, qrSize, true)
+        scaledBitmap = Bitmap.createScaledBitmap(bitmap, qrSize, qrSize, true)
 
         val borderPaint = Paint().apply {
             color = android.graphics.Color.LTGRAY
@@ -3754,10 +3886,9 @@ private fun exportStickerSheetPdf(context: Context, bitmap: Bitmap, title: Strin
             cachePath.mkdirs()
         }
         val file = File(cachePath, "hoja_stickers_12.pdf")
-        val stream = FileOutputStream(file)
-        pdfDocument.writeTo(stream)
-        stream.close()
-        pdfDocument.close()
+        FileOutputStream(file).use { stream ->
+            pdfDocument.writeTo(stream)
+        }
 
         val contentUri = androidx.core.content.FileProvider.getUriForFile(
             context,
@@ -3779,6 +3910,11 @@ private fun exportStickerSheetPdf(context: Context, bitmap: Bitmap, title: Strin
     } catch (e: Exception) {
         e.printStackTrace()
         Toast.makeText(context, "Error al generar hoja de stickers: ${e.message}", Toast.LENGTH_SHORT).show()
+    } finally {
+        if (scaledBitmap != null && scaledBitmap !== bitmap && !scaledBitmap.isRecycled) {
+            scaledBitmap.recycle()
+        }
+        pdfDocument.close()
     }
 }
 
@@ -3865,10 +4001,11 @@ private fun saveUltraHighResToGallery(
     logoSizeRatio: Float,
     logoBadgeShape: LogoBadgeShape,
     targetDimension: Int,
-    customEmoji: String = "😀"
+    customEmoji: String = "😀",
+    watermarkText: String? = null
 ) {
     try {
-        val ultraBitmap = CodeGenerator.generateBitmapOrThrow(
+        val rawUltra = CodeGenerator.generateBitmapOrThrow(
             content = content,
             format = format,
             width = targetDimension,
@@ -3882,8 +4019,16 @@ private fun saveUltraHighResToGallery(
             logoBadgeShape = logoBadgeShape,
             customEmoji = customEmoji
         )
+        val finalUltra = if (!watermarkText.isNullOrBlank()) {
+            val marked = CodeGenerator.applyWatermarkOverlay(rawUltra, watermarkText)
+            if (marked !== rawUltra && !rawUltra.isRecycled) rawUltra.recycle()
+            marked
+        } else {
+            rawUltra
+        }
 
-        saveBitmapToGallery(context, ultraBitmap, Bitmap.CompressFormat.PNG)
+        saveBitmapToGallery(context, finalUltra, Bitmap.CompressFormat.PNG)
+        if (!finalUltra.isRecycled) finalUltra.recycle()
         Toast.makeText(context, "¡Ultra HD (${targetDimension}x${targetDimension}px) generado con éxito!", Toast.LENGTH_LONG).show()
     } catch (e: Exception) {
         e.printStackTrace()
@@ -4162,25 +4307,85 @@ fun ShapeMiniPreview(
                     textPaint.getTextBounds("😀", 0, 1, textBounds)
                     drawContext.canvas.nativeCanvas.drawText("😀", cx, cy - textBounds.exactCenterY(), textPaint)
                 }
-                else -> {}
             }
         }
     }
 }
 
 private fun compositeWithCachedTemplate(templateBitmap: android.graphics.Bitmap, qrBitmap: android.graphics.Bitmap): android.graphics.Bitmap {
+    if (templateBitmap.isRecycled || qrBitmap.isRecycled || qrBitmap.width <= 0 || qrBitmap.height <= 0) {
+        return qrBitmap
+    }
     val finalTemplate = android.graphics.Bitmap.createBitmap(templateBitmap.width, templateBitmap.height, android.graphics.Bitmap.Config.ARGB_8888)
     val canvas = android.graphics.Canvas(finalTemplate)
     canvas.drawBitmap(templateBitmap, 0f, 0f, null)
-    val targetQrSize = (finalTemplate.width * 0.46f).toInt()
+    val targetQrSize = (finalTemplate.width * 0.46f).toInt().coerceAtLeast(1)
     val scaledQr = android.graphics.Bitmap.createScaledBitmap(qrBitmap, targetQrSize, targetQrSize, true)
     
     val left = (finalTemplate.width - targetQrSize) / 2f
     val top = (finalTemplate.height - targetQrSize) / 2f
     
     canvas.drawBitmap(scaledQr, left, top, null)
+    if (scaledQr !== qrBitmap && !scaledQr.isRecycled) {
+        scaledQr.recycle()
+    }
     
     return finalTemplate
+}
+
+internal fun escapeWifiField(value: String): String = buildString {
+    value.forEach { ch ->
+        when (ch) {
+            '\\', ';', ':', ',' -> append('\\').append(ch)
+            else -> append(ch)
+        }
+    }
+}
+
+internal fun unescapeWifiField(value: String): String = buildString {
+    var i = 0
+    while (i < value.length) {
+        if (value[i] == '\\' && i + 1 < value.length) {
+            append(value[i + 1])
+            i += 2
+        } else {
+            append(value[i])
+            i++
+        }
+    }
+}
+
+internal fun parseWifiForEditor(raw: String): Triple<String, String, String> {
+    val body = raw.removePrefix("WIFI:")
+    val tokens = mutableListOf<String>()
+    val current = StringBuilder()
+    var i = 0
+    while (i < body.length) {
+        val ch = body[i]
+        if (ch == '\\' && i + 1 < body.length) {
+            current.append(ch).append(body[i + 1])
+            i += 2
+        } else if (ch == ';') {
+            tokens.add(current.toString())
+            current.clear()
+            i++
+        } else {
+            current.append(ch)
+            i++
+        }
+    }
+    if (current.isNotEmpty()) tokens.add(current.toString())
+    var ssid = ""
+    var pass = ""
+    var security = "WPA"
+    tokens.forEach { part ->
+        when {
+            part.startsWith("S:") -> ssid = unescapeWifiField(part.removePrefix("S:"))
+            part.startsWith("P:") -> pass = unescapeWifiField(part.removePrefix("P:"))
+            part.startsWith("T:") -> security = unescapeWifiField(part.removePrefix("T:")).ifBlank { "WPA" }
+        }
+    }
+    return Triple(ssid, pass, security)
 }
 
 @Composable
@@ -4640,11 +4845,16 @@ fun ExpandableSection(
 
 @Composable
 fun PaywallDialog(
+    pricingState: com.example.billing.PaywallPricingState = com.example.billing.PaywallPricingState(),
     onDismiss: () -> Unit,
     onPurchaseLifetime: () -> Unit,
     onPurchaseMonthly: () -> Unit,
     onPurchaseYearly: () -> Unit
 ) {
+    val monthly = pricingState.monthly
+    val yearly = pricingState.yearly
+    val lifetimePrice = pricingState.lifetimeFormattedPrice
+
     androidx.compose.ui.window.Dialog(
         onDismissRequest = onDismiss,
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
@@ -4664,7 +4874,6 @@ fun PaywallDialog(
                     .padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Top Close Button & Pro Badge Header (Solid background & high contrast)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -4687,7 +4896,7 @@ fun PaywallDialog(
                             )
                             Spacer(Modifier.width(6.dp))
                             Text(
-                                text = "ACCESO ILIMITADO PRO",
+                                text = stringResource(R.string.paywall_badge),
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Black,
                                 color = androidx.compose.ui.graphics.Color(0xFF78350F)
@@ -4697,11 +4906,11 @@ fun PaywallDialog(
 
                     IconButton(
                         onClick = onDismiss,
-                        modifier = Modifier.size(36.dp)
+                        modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Cerrar",
+                            contentDescription = stringResource(R.string.btn_cancel),
                             tint = androidx.compose.ui.graphics.Color(0xFF1E293B)
                         )
                     }
@@ -4709,19 +4918,18 @@ fun PaywallDialog(
 
                 Spacer(Modifier.height(14.dp))
 
-                // Hero Headline (Solid, bold, legible)
                 Text(
-                    text = "Lleva tus Códigos QR al Nivel Profesional",
+                    text = stringResource(R.string.paywall_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.ExtraBold,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                     color = androidx.compose.ui.graphics.Color(0xFF0F172A)
                 )
-                
+
                 Spacer(Modifier.height(6.dp))
-                
+
                 Text(
-                    text = "Desbloquea todas las funciones avanzadas para tu negocio o marca.",
+                    text = stringResource(R.string.paywall_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Normal,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -4730,13 +4938,12 @@ fun PaywallDialog(
 
                 Spacer(Modifier.height(16.dp))
 
-                // Pro Features list with checks (Solid light slate container & solid deep text)
                 val proFeatures = listOf(
-                    "🖼️ Marcos y fondos PNG personalizados (Sube tus propios artes)",
-                    "📐 Vector SVG híbrido con logos incrustados en ultra alta calidad",
-                    "🏷️ Plantillas de diseño exclusivas para hostelería, pago y marcas",
-                    "⚡ Transferencia Óptica Ultra por pantalla a máxima velocidad",
-                    "🚫 Cero anuncios y procesamiento 100% prioritario"
+                    stringResource(R.string.paywall_feature_1),
+                    stringResource(R.string.paywall_feature_2),
+                    stringResource(R.string.paywall_feature_3),
+                    stringResource(R.string.paywall_feature_4),
+                    stringResource(R.string.paywall_feature_5)
                 )
 
                 Surface(
@@ -4771,7 +4978,7 @@ fun PaywallDialog(
 
                 Spacer(Modifier.height(16.dp))
 
-                // --- AGGRESSIVE PROMO CARD: 7 DAYS FREE TRIAL ($0 TODAY) ---
+                // --- MONTHLY SUBSCRIPTION CARD (DYNAMIC GOOGLE PLAY LOCALIZED PRICE) ---
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -4794,7 +5001,11 @@ fun PaywallDialog(
                                 color = androidx.compose.ui.graphics.Color(0xFF1D4ED8)
                             ) {
                                 Text(
-                                    text = "🔥 OFERTA DE LANZAMIENTO",
+                                    text = if (monthly?.hasFreeTrial == true) {
+                                        stringResource(R.string.paywall_trial_badge)
+                                    } else {
+                                        stringResource(R.string.paywall_monthly_badge)
+                                    },
                                     color = androidx.compose.ui.graphics.Color(0xFFFFFFFF),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Black,
@@ -4802,25 +5013,60 @@ fun PaywallDialog(
                                 )
                             }
 
-                            Text(
-                                text = "$0.00 HOY",
-                                fontWeight = FontWeight.Black,
-                                style = MaterialTheme.typography.titleLarge,
-                                color = androidx.compose.ui.graphics.Color(0xFF1E3A8A)
-                            )
+                            val rightHighlight = when {
+                                monthly?.hasFreeTrial == true && monthly.trialFormattedPrice != null ->
+                                    stringResource(R.string.paywall_trial_today, monthly.trialFormattedPrice)
+                                monthly != null ->
+                                    "${monthly.recurringFormattedPrice}/${monthly.periodLabel}"
+                                pricingState.isLoading ->
+                                    stringResource(R.string.paywall_loading_short)
+                                else -> ""
+                            }
+                            if (rightHighlight.isNotEmpty()) {
+                                Text(
+                                    text = rightHighlight,
+                                    fontWeight = FontWeight.Black,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = androidx.compose.ui.graphics.Color(0xFF1E3A8A)
+                                )
+                            }
                         }
 
                         Spacer(Modifier.height(10.dp))
 
+                        val monthlyHeadline = if (monthly?.hasFreeTrial == true && monthly.trialDurationLabel != null) {
+                            stringResource(R.string.paywall_trial_title, monthly.trialDurationLabel)
+                        } else {
+                            stringResource(R.string.paywall_monthly_title)
+                        }
                         Text(
-                            text = "7 Días de Prueba Gratis",
+                            text = monthlyHeadline,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Black,
                             color = androidx.compose.ui.graphics.Color(0xFF0F172A)
                         )
 
+                        val monthlyDescription = when {
+                            monthly?.hasFreeTrial == true && monthly.trialDurationLabel != null ->
+                                stringResource(
+                                    R.string.paywall_trial_desc,
+                                    monthly.trialDurationLabel,
+                                    monthly.recurringFormattedPrice,
+                                    monthly.periodLabel
+                                )
+                            monthly != null ->
+                                stringResource(
+                                    R.string.paywall_monthly_desc,
+                                    monthly.recurringFormattedPrice,
+                                    monthly.periodLabel
+                                )
+                            pricingState.isLoading ->
+                                stringResource(R.string.paywall_loading_price)
+                            else ->
+                                stringResource(R.string.paywall_fallback_desc)
+                        }
                         Text(
-                            text = "Disfruta de todo sin pagar nada por 1 semana. Luego solo $1.00/mes. Cancela cuando quieras en Google Play.",
+                            text = monthlyDescription,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
                             color = androidx.compose.ui.graphics.Color(0xFF1E3A8A)
@@ -4828,6 +5074,18 @@ fun PaywallDialog(
 
                         Spacer(Modifier.height(14.dp))
 
+                        val monthlyCta = when {
+                            monthly?.hasFreeTrial == true && monthly.trialDurationLabel != null ->
+                                stringResource(R.string.paywall_trial_cta, monthly.trialDurationLabel)
+                            monthly != null ->
+                                stringResource(
+                                    R.string.paywall_monthly_cta,
+                                    monthly.recurringFormattedPrice,
+                                    monthly.periodLabel
+                                )
+                            else ->
+                                stringResource(R.string.paywall_fallback_cta)
+                        }
                         Button(
                             onClick = onPurchaseMonthly,
                             modifier = Modifier.fillMaxWidth().height(50.dp),
@@ -4838,7 +5096,7 @@ fun PaywallDialog(
                             )
                         ) {
                             Text(
-                                text = "Comenzar 7 Días Gratis",
+                                text = monthlyCta,
                                 fontWeight = FontWeight.Black,
                                 style = MaterialTheme.typography.titleSmall
                             )
@@ -4848,12 +5106,11 @@ fun PaywallDialog(
 
                 Spacer(Modifier.height(12.dp))
 
-                // Secondary Plans: Annual & Lifetime (Solid white background & solid high-contrast borders)
+                // Secondary Plans: Annual & Lifetime
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Annual
                     Card(
                         modifier = Modifier
                             .weight(1f)
@@ -4866,20 +5123,50 @@ fun PaywallDialog(
                             modifier = Modifier.padding(12.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text("Plan Anual", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = androidx.compose.ui.graphics.Color(0xFF0F172A))
+                            Text(
+                                text = stringResource(R.string.paywall_yearly_title),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = androidx.compose.ui.graphics.Color(0xFF0F172A)
+                            )
                             Spacer(Modifier.height(4.dp))
-                            Text("$10.00 / año", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Black, color = androidx.compose.ui.graphics.Color(0xFF1D4ED8))
-                            Spacer(Modifier.height(2.dp))
+                            val yearlyPriceLabel = when {
+                                yearly != null -> "${yearly.recurringFormattedPrice} / ${yearly.periodLabel}"
+                                pricingState.isLoading -> stringResource(R.string.paywall_loading_short)
+                                else -> stringResource(R.string.paywall_see_play)
+                            }
+                            Text(
+                                text = yearlyPriceLabel,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Black,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                color = androidx.compose.ui.graphics.Color(0xFF1D4ED8)
+                            )
+                            Spacer(Modifier.height(4.dp))
                             Surface(
                                 shape = RoundedCornerShape(4.dp),
                                 color = androidx.compose.ui.graphics.Color(0xFFD1FAE5)
                             ) {
-                                Text("Ahorra 17%", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = androidx.compose.ui.graphics.Color(0xFF065F46), modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                                val savingsPct = yearly?.savingsPercent
+                                val yearlyBadge = when {
+                                    yearly?.hasFreeTrial == true && yearly.trialDurationLabel != null ->
+                                        stringResource(R.string.paywall_trial_title, yearly.trialDurationLabel)
+                                    savingsPct != null && savingsPct > 0 ->
+                                        stringResource(R.string.paywall_yearly_save, savingsPct)
+                                    else ->
+                                        stringResource(R.string.paywall_yearly_billing)
+                                }
+                                Text(
+                                    text = yearlyBadge,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = androidx.compose.ui.graphics.Color(0xFF065F46),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
                             }
                         }
                     }
 
-                    // Lifetime
                     Card(
                         modifier = Modifier
                             .weight(1f)
@@ -4892,15 +5179,37 @@ fun PaywallDialog(
                             modifier = Modifier.padding(12.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text("De por Vida", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = androidx.compose.ui.graphics.Color(0xFF0F172A))
+                            Text(
+                                text = stringResource(R.string.paywall_lifetime_title),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = androidx.compose.ui.graphics.Color(0xFF0F172A)
+                            )
                             Spacer(Modifier.height(4.dp))
-                            Text("$19.99", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Black, color = androidx.compose.ui.graphics.Color(0xFF7C3AED))
-                            Spacer(Modifier.height(2.dp))
+                            val lifetimeLabel = when {
+                                lifetimePrice != null -> lifetimePrice
+                                pricingState.isLoading -> stringResource(R.string.paywall_loading_short)
+                                else -> stringResource(R.string.paywall_see_play)
+                            }
+                            Text(
+                                text = lifetimeLabel,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Black,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                color = androidx.compose.ui.graphics.Color(0xFF7C3AED)
+                            )
+                            Spacer(Modifier.height(4.dp))
                             Surface(
                                 shape = RoundedCornerShape(4.dp),
                                 color = androidx.compose.ui.graphics.Color(0xFFEDE9FE)
                             ) {
-                                Text("Pago único", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = androidx.compose.ui.graphics.Color(0xFF5B21B6), modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                                Text(
+                                    text = stringResource(R.string.paywall_lifetime_badge),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = androidx.compose.ui.graphics.Color(0xFF5B21B6),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
                             }
                         }
                     }
@@ -4908,9 +5217,8 @@ fun PaywallDialog(
 
                 Spacer(Modifier.height(16.dp))
 
-                // Footer Guarantee / Disclaimer (Solid color, sharp and readable)
                 Text(
-                    text = "🔒 Pago 100% seguro gestionado por Google Play Store.\nPuedes cancelar la prueba gratuita en cualquier momento desde Google Play.",
+                    text = stringResource(R.string.paywall_footer),
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Normal,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
