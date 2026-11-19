@@ -320,19 +320,8 @@
     <string name="exp_stickers">Genera un documento PDF tamaño A4 listo para imprimir con 12 etiquetas adhesivas de tu código.</string>
     <string name="exp_watermark">Incrusta un texto visual sobre el código para protegerlo de capturas de pantalla, manteniéndolo funcional.</string>
     <string name="exp_animated">Transmite un archivo a otro dispositivo sin usar internet. El receptor debe usar esta app para escanear.</string>
-    <string name="create_opt_ultra_transfer">⚡ Rayo Óptico (Lab 300+ KB/s)</string>
+    <string name="create_opt_ultra_transfer">Transferir por QR</string>
     <string name="title_ultra_transfer">Laboratorio Óptico Ultra-Rápido</string>
     <string name="desc_ultra_transfer">Transmisión de archivos y videos por luz a alta velocidad mediante QR animado comprimido.</string>
-    <string name="home_heading">Escanea y crea</string>
-    <string name="home_scan_hint">Lee códigos QR y de barras con tu cámara.</string>
-    <string name="home_saved">Tus códigos</string>
-    <string name="set_theme_modern">Moderno · automático</string>
-    <string name="settings_personalization">Personalización</string>
-    <string name="settings_tools">Herramientas</string>
-    <string name="settings_app">Aplicación</string>
-    <string name="create_pro_tools">Herramientas Pro</string>
-    <string name="template_hint">Diseños listos para personalizar.</string>
-    <string name="upload_frame">Subir marco</string>
-    <string name="theme_preview">Vista previa</string>
-    <string name="editor_title">Personalizar</string>
+
 </resources>

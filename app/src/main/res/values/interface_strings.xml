@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_heading">Escanea y crea</string>
+    <string name="home_scan_hint">Lee códigos QR y de barras con tu cámara.</string>
+    <string name="home_saved">Tus códigos</string>
+    <string name="set_theme_modern">Moderno · automático</string>
+    <string name="settings_personalization">Personalización</string>
+    <string name="settings_tools">Herramientas</string>
+    <string name="settings_app">Aplicación</string>
+    <string name="create_pro_tools">Herramientas Pro</string>
+    <string name="template_hint">Diseños listos para personalizar.</string>
+    <string name="upload_frame">Subir marco</string>
+    <string name="theme_preview">Vista previa</string>
+    <string name="editor_title">Personalizar</string>
+    <string name="template_qr_design">Diseño del QR</string>
+    <string name="template_text_style">Estilo y textos adicionales</string>
+    <string name="template_export">Guardar y compartir</string>
+    <string name="template_edit_text">Editar texto de la plantilla</string>
+</resources>

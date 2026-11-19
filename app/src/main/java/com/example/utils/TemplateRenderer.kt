@@ -92,265 +92,44 @@ data class TemplateCustomization(
 )
 
 object TemplateRenderer {
-    val AVAILABLE_TEMPLATES = listOf(
-        TemplateItemDef(
-            id = "custom_pro_frame",
-            name = "Marco Pro Studio",
-            category = "Destacado",
-            vectorResId = R.drawable.template_frame_custom_pro,
-            primaryColor = Color.parseColor("#1E293B"),
-            cardColor = Color.parseColor("#0F172A"),
-            defaultText = "ESCANÉAME",
-            defaultSubtext = "Apunta con la cámara de tu móvil",
-            defaultTextColor = Color.WHITE,
-            isDarkTheme = true,
-            background = TemplateBackground(type = "bitmap"),
-            qrArea = TemplateQrArea(x = 179f, y = 370f, width = 665f, height = 665f, radius = 24f, background = "#FFFFFF"),
-            elements = listOf(
-                TemplateTextElement(id = "header", x = 512f, y = 160f, width = 768f, height = 50f, text = "", fontSize = 24f, align = Paint.Align.CENTER, color = "#FFFFFF", isBold = true),
-                TemplateTextElement(id = "title", x = 512f, y = 230f, width = 768f, height = 100f, text = "ESCANÉAME", fontSize = 48f, align = Paint.Align.CENTER, color = "#FFFFFF", isBold = true),
-                TemplateTextElement(id = "subtext", x = 512f, y = 1140f, width = 768f, height = 80f, text = "Apunta con la cámara de tu móvil", fontSize = 28f, align = Paint.Align.CENTER, color = "#FFFFFF", isBold = false)
-            )
-        ),
-        TemplateItemDef(
-            id = "escanea_aqui",
-            name = "Escanea",
-            category = "Destacado",
-            vectorResId = R.drawable.template_frame_escanea_aqui,
-            primaryColor = Color.parseColor("#D4062A"),
-            cardColor = Color.parseColor("#012322"),
-            defaultText = "Escanea",
-            defaultSubtext = "",
-            defaultTextColor = Color.parseColor("#FDFEFF"),
-            isDarkTheme = true,
-            
-            // Parameterized
-            qrArea = TemplateQrArea(x = 179f, y = 400f, width = 665f, height = 665f, radius = 40f, background = "#FFFFFF"),
-            elements = listOf(
-                TemplateTextElement(id = "title", x = 573.44f, y = 227f, width = 768f, height = 100f, text = "Escanea", fontSize = 48f, align = Paint.Align.CENTER, color = "#FDFEFF", isBold = true),
-                TemplateTextElement(id = "subtext", x = 512f, y = 1145f, width = 768f, height = 100f, text = "", fontSize = 28f, align = Paint.Align.CENTER, color = "#D4062A", isBold = true)
-            )
-        ),
-        TemplateItemDef(
-            id = "navy_geo",
-            name = "Navy Geometric",
-            category = "Corporativo",
-            vectorResId = R.drawable.template_frame_navy_geo,
-            primaryColor = Color.parseColor("#00A3FF"),
-            cardColor = Color.parseColor("#093C68"),
-            defaultText = "SCAN HERE",
-            defaultSubtext = "www.123.com",
-            defaultTextColor = Color.WHITE,
-            isDarkTheme = true,
-            
-            qrArea = TemplateQrArea(x = 179f, y = 400f, width = 665f, height = 665f, radius = 40f, background = "#FFFFFF"),
-            elements = listOf(
-                TemplateTextElement(id = "header", x = 512f, y = 147f, width = 768f, height = 50f, text = "", fontSize = 24f, align = Paint.Align.CENTER, color = "#FFFFFF", isBold = true),
-                TemplateTextElement(id = "title", x = 512f, y = 211f, width = 768f, height = 100f, text = "SCAN HERE", fontSize = 48f, align = Paint.Align.CENTER, color = "#FFFFFF", isBold = true),
-                TemplateTextElement(id = "subtext", x = 512f, y = 1145f, width = 768f, height = 80f, text = "www.123.com", fontSize = 28f, align = Paint.Align.CENTER, color = "#4ADE80", isBold = true),
-                TemplateTextElement(id = "footer", x = 512f, y = 1210f, width = 768f, height = 50f, text = "", fontSize = 22f, align = Paint.Align.CENTER, color = "#FFFFFF", isBold = false)
-            )
-        ),
-        TemplateItemDef(
-            id = "pay_minimal",
-            name = "Escanea Para Pagar",
-            category = "Comercio",
-            vectorResId = R.drawable.template_frame_pay_minimal,
-            primaryColor = Color.BLACK,
-            cardColor = Color.WHITE,
-            defaultText = "ESCANEA PARA PAGAR",
-            defaultSubtext = "¡GRACIAS POR ELEGIRNOS!",
-            defaultTextColor = Color.BLACK,
-            isDarkTheme = false,
-            
-            qrArea = TemplateQrArea(x = 179f, y = 359f, width = 665f, height = 665f, radius = 24f, background = "#FFFFFF"),
-            elements = listOf(
-                TemplateTextElement(id = "header", x = 512f, y = 160f, width = 768f, height = 50f, text = "", fontSize = 24f, align = Paint.Align.CENTER, color = "#000000", isBold = true),
-                TemplateTextElement(id = "title", x = 512f, y = 224f, width = 768f, height = 100f, text = "ESCANEA PARA PAGAR", fontSize = 48f, align = Paint.Align.CENTER, color = "#000000", isBold = true),
-                TemplateTextElement(id = "subtext", x = 512f, y = 1133f, width = 768f, height = 80f, text = "¡GRACIAS POR ELEGIRNOS!", fontSize = 28f, align = Paint.Align.CENTER, color = "#000000", isBold = false),
-                TemplateTextElement(id = "footer", x = 512f, y = 1139f, width = 768f, height = 50f, text = "", fontSize = 22f, align = Paint.Align.CENTER, color = "#000000", isBold = false)
-            )
-        ),
-        TemplateItemDef(
-            id = "modern_blue",
-            name = "Modern Blue",
-            category = "Moderno",
-            vectorResId = R.drawable.template_frame_modern,
-            primaryColor = Color.parseColor("#3B82F6"),
-            cardColor = Color.WHITE,
-            defaultText = "ESCANÉAME",
-            defaultSubtext = "Apunta con tu cámara para abrir",
-            defaultTextColor = Color.WHITE,
-            isDarkTheme = true,
-            
-            qrArea = TemplateQrArea(x = 179f, y = 409f, width = 665f, height = 665f, radius = 30f, background = "#FFFFFF"),
-            elements = listOf(
-                TemplateTextElement(id = "header", x = 512f, y = 128f, width = 768f, height = 50f, text = "", fontSize = 24f, align = Paint.Align.CENTER, color = "#FFFFFF", isBold = true),
-                TemplateTextElement(id = "title", x = 512f, y = 185f, width = 768f, height = 100f, text = "ESCANÉAME", fontSize = 48f, align = Paint.Align.CENTER, color = "#FFFFFF", isBold = true),
-                TemplateTextElement(id = "subtext", x = 512f, y = 1130f, width = 768f, height = 80f, text = "Apunta con tu cámara", fontSize = 28f, align = Paint.Align.CENTER, color = "#FFFFFF", isBold = false)
-            )
-        ),
-        TemplateItemDef(
-            id = "scan_me_neon",
-            name = "Neon Violet",
-            category = "Moderno",
-            vectorResId = R.drawable.template_frame_scanme,
-            primaryColor = Color.parseColor("#8B5CF6"),
-            cardColor = Color.parseColor("#1E1B4B"),
-            defaultText = "SCAN ME",
-            defaultSubtext = "Para más información",
-            defaultTextColor = Color.WHITE,
-            isDarkTheme = true,
-            
-            qrArea = TemplateQrArea(x = 179f, y = 359f, width = 665f, height = 665f, radius = 30f, background = "#FFFFFF"),
-            elements = listOf(
-                TemplateTextElement(id = "header", x = 512f, y = 128f, width = 768f, height = 50f, text = "", fontSize = 24f, align = Paint.Align.CENTER, color = "#FFFFFF", isBold = true),
-                TemplateTextElement(id = "title", x = 512f, y = 192f, width = 768f, height = 100f, text = "SCAN ME", fontSize = 48f, align = Paint.Align.CENTER, color = "#FFFFFF", isBold = true),
-                TemplateTextElement(id = "subtext", x = 512f, y = 1177f, width = 768f, height = 80f, text = "Para más información", fontSize = 28f, align = Paint.Align.CENTER, color = "#FFFFFF", isBold = false),
-                TemplateTextElement(id = "footer", x = 512f, y = 1216f, width = 768f, height = 50f, text = "", fontSize = 22f, align = Paint.Align.CENTER, color = "#FFFFFF", isBold = false)
-            )
-        ),
-        TemplateItemDef(
-            id = "minimal_clean",
-            name = "Minimal Clean",
-            category = "Minimalista",
+    private fun themedTemplate(
+        id: String, name: String, category: String, background: String, accent: String,
+        title: String, subtitle: String
+    ): TemplateItemDef {
+        val ink = Color.parseColor("#182720")
+        return TemplateItemDef(
+            id = id, name = name, category = category,
             vectorResId = R.drawable.template_frame_minimal,
-            primaryColor = Color.parseColor("#E5E7EB"),
-            cardColor = Color.parseColor("#F9FAFB"),
-            defaultText = "Información",
-            defaultSubtext = "Escanea el código",
-            defaultTextColor = Color.parseColor("#111827"),
-            isDarkTheme = false,
-            
-            qrArea = TemplateQrArea(x = 179f, y = 409f, width = 665f, height = 665f, radius = 24f, background = "#FFFFFF"),
+            primaryColor = Color.parseColor(accent),
+            cardColor = Color.parseColor(background),
+            defaultText = title, defaultSubtext = subtitle,
+            defaultTextColor = ink,
+            background = TemplateBackground(type = "themed", color = background),
+            qrArea = TemplateQrArea(x = 182f, y = 365f, width = 660f, height = 660f, radius = 28f, background = "#FFFFFF"),
             elements = listOf(
-                TemplateTextElement(id = "header", x = 512f, y = 128f, width = 768f, height = 50f, text = "", fontSize = 24f, align = Paint.Align.CENTER, color = "#111827", isBold = true),
-                TemplateTextElement(id = "title", x = 512f, y = 192f, width = 768f, height = 100f, text = "Información", fontSize = 48f, align = Paint.Align.CENTER, color = "#111827", isBold = true),
-                TemplateTextElement(id = "subtext", x = 512f, y = 1145f, width = 768f, height = 80f, text = "Escanea el código", fontSize = 28f, align = Paint.Align.CENTER, color = "#111827", isBold = false),
-                TemplateTextElement(id = "footer", x = 512f, y = 1190f, width = 768f, height = 50f, text = "", fontSize = 22f, align = Paint.Align.CENTER, color = "#111827", isBold = false)
-            )
-        ),
-        TemplateItemDef(
-            id = "vip_gold",
-            name = "VIP Gold",
-            category = "Elegante",
-            vectorResId = R.drawable.template_frame_gold,
-            primaryColor = Color.parseColor("#B8860B"),
-            cardColor = Color.parseColor("#111111"),
-            defaultText = "PREMIUM ACCESS",
-            defaultSubtext = "Beneficios Exclusivos",
-            defaultTextColor = Color.parseColor("#DAA520"),
-            isDarkTheme = true,
-            
-            qrArea = TemplateQrArea(x = 179f, y = 435f, width = 665f, height = 665f, radius = 10f, background = "#FFFFFF"),
-            elements = listOf(
-                TemplateTextElement(id = "header", x = 512f, y = 128f, width = 768f, height = 50f, text = "", fontSize = 24f, align = Paint.Align.CENTER, color = "#DAA520", isBold = true),
-                TemplateTextElement(id = "title", x = 512f, y = 192f, width = 768f, height = 100f, text = "PREMIUM ACCESS", fontSize = 48f, align = Paint.Align.CENTER, color = "#DAA520", isBold = true),
-                TemplateTextElement(id = "subtext", x = 512f, y = 1141f, width = 768f, height = 80f, text = "Beneficios Exclusivos", fontSize = 28f, align = Paint.Align.CENTER, color = "#DAA520", isBold = false),
-                TemplateTextElement(id = "footer", x = 512f, y = 1190f, width = 768f, height = 50f, text = "", fontSize = 22f, align = Paint.Align.CENTER, color = "#DAA520", isBold = false)
-            )
-        ),
-        TemplateItemDef(
-            id = "cafe_menu",
-            name = "Menú Café",
-            category = "Gastronomía",
-            vectorResId = R.drawable.template_frame_cafe,
-            primaryColor = Color.parseColor("#8D6E63"),
-            cardColor = Color.parseColor("#FFF3E0"),
-            defaultText = "NUESTRO MENÚ",
-            defaultSubtext = "Escanea para ordenar",
-            defaultTextColor = Color.parseColor("#3E2723"),
-            isDarkTheme = false,
-            
-            qrArea = TemplateQrArea(x = 179f, y = 400f, width = 665f, height = 665f, radius = 24f, background = "#FFFFFF"),
-            elements = listOf(
-                TemplateTextElement(id = "header", x = 512f, y = 128f, width = 768f, height = 50f, text = "", fontSize = 24f, align = Paint.Align.CENTER, color = "#3E2723", isBold = true),
-                TemplateTextElement(id = "title", x = 512f, y = 217f, width = 768f, height = 100f, text = "NUESTRO MENÚ", fontSize = 48f, align = Paint.Align.CENTER, color = "#3E2723", isBold = true),
-                TemplateTextElement(id = "subtext", x = 512f, y = 1158f, width = 768f, height = 80f, text = "Escanea para ordenar", fontSize = 28f, align = Paint.Align.CENTER, color = "#3E2723", isBold = false),
-                TemplateTextElement(id = "footer", x = 512f, y = 1190f, width = 768f, height = 50f, text = "", fontSize = 22f, align = Paint.Align.CENTER, color = "#3E2723", isBold = false)
-            )
-        ),
-        TemplateItemDef(
-            id = "tech_blue",
-            name = "Tech Blue",
-            category = "Tecnología",
-            vectorResId = R.drawable.template_frame_tech,
-            primaryColor = Color.parseColor("#0284C7"),
-            cardColor = Color.parseColor("#0F172A"),
-            defaultText = "WIFI INVITADOS",
-            defaultSubtext = "Conexión Segura",
-            defaultTextColor = Color.parseColor("#38BDF8"),
-            isDarkTheme = true,
-            
-            qrArea = TemplateQrArea(x = 179f, y = 360f, width = 665f, height = 665f, radius = 16f, background = "#FFFFFF"),
-            elements = listOf(
-                TemplateTextElement(id = "header", x = 512f, y = 128f, width = 768f, height = 50f, text = "", fontSize = 24f, align = Paint.Align.CENTER, color = "#38BDF8", isBold = true),
-                TemplateTextElement(id = "title", x = 512f, y = 198f, width = 768f, height = 100f, text = "WIFI INVITADOS", fontSize = 48f, align = Paint.Align.CENTER, color = "#38BDF8", isBold = true),
-                TemplateTextElement(id = "subtext", x = 512f, y = 1184f, width = 768f, height = 80f, text = "Conexión Segura", fontSize = 28f, align = Paint.Align.CENTER, color = "#38BDF8", isBold = false),
-                TemplateTextElement(id = "footer", x = 512f, y = 1190f, width = 768f, height = 50f, text = "", fontSize = 22f, align = Paint.Align.CENTER, color = "#38BDF8", isBold = false)
-            )
-        ),
-        TemplateItemDef(
-            id = "eco_nature",
-            name = "Eco Nature",
-            category = "Natural",
-            vectorResId = R.drawable.template_frame_nature,
-            primaryColor = Color.parseColor("#4CAF50"),
-            cardColor = Color.parseColor("#E8F5E9"),
-            defaultText = "SOSTENIBILIDAD",
-            defaultSubtext = "Conoce más aquí",
-            defaultTextColor = Color.parseColor("#1B5E20"),
-            isDarkTheme = false,
-            
-            qrArea = TemplateQrArea(x = 179f, y = 400f, width = 665f, height = 665f, radius = 40f, background = "#FFFFFF"),
-            elements = listOf(
-                TemplateTextElement(id = "header", x = 512f, y = 128f, width = 768f, height = 50f, text = "", fontSize = 24f, align = Paint.Align.CENTER, color = "#1B5E20", isBold = true),
-                TemplateTextElement(id = "title", x = 512f, y = 256f, width = 768f, height = 100f, text = "SOSTENIBILIDAD", fontSize = 48f, align = Paint.Align.CENTER, color = "#1B5E20", isBold = true),
-                TemplateTextElement(id = "subtext", x = 512f, y = 1209f, width = 768f, height = 80f, text = "Conoce más aquí", fontSize = 28f, align = Paint.Align.CENTER, color = "#1B5E20", isBold = false),
-                TemplateTextElement(id = "footer", x = 512f, y = 1190f, width = 768f, height = 50f, text = "", fontSize = 22f, align = Paint.Align.CENTER, color = "#1B5E20", isBold = false)
-            )
-        ),
-        TemplateItemDef(
-            id = "romantic_love",
-            name = "Romantic",
-            category = "Eventos",
-            vectorResId = R.drawable.template_frame_love,
-            primaryColor = Color.parseColor("#E91E63"),
-            cardColor = Color.parseColor("#FCE4EC"),
-            defaultText = "NUESTRA BODA",
-            defaultSubtext = "Confirma tu asistencia",
-            defaultTextColor = Color.parseColor("#880E4F"),
-            isDarkTheme = false,
-            
-            qrArea = TemplateQrArea(x = 179f, y = 400f, width = 665f, height = 665f, radius = 24f, background = "#FFFFFF"),
-            elements = listOf(
-                TemplateTextElement(id = "header", x = 512f, y = 128f, width = 768f, height = 50f, text = "", fontSize = 24f, align = Paint.Align.CENTER, color = "#880E4F", isBold = true),
-                TemplateTextElement(id = "title", x = 512f, y = 262f, width = 768f, height = 100f, text = "NUESTRA BODA", fontSize = 48f, align = Paint.Align.CENTER, color = "#880E4F", isBold = true),
-                TemplateTextElement(id = "subtext", x = 512f, y = 1145f, width = 768f, height = 80f, text = "Confirma tu asistencia", fontSize = 28f, align = Paint.Align.CENTER, color = "#880E4F", isBold = false),
-                TemplateTextElement(id = "footer", x = 512f, y = 1190f, width = 768f, height = 50f, text = "", fontSize = 22f, align = Paint.Align.CENTER, color = "#880E4F", isBold = false)
-            )
-        ),
-        TemplateItemDef(
-            id = "party_event",
-            name = "Party Event",
-            category = "Eventos",
-            vectorResId = R.drawable.template_frame_party,
-            primaryColor = Color.parseColor("#9C27B0"),
-            cardColor = Color.parseColor("#311B92"),
-            defaultText = "FIESTA NEÓN",
-            defaultSubtext = "Escanea para entrar",
-            defaultTextColor = Color.parseColor("#E040FB"),
-            isDarkTheme = true,
-            
-            qrArea = TemplateQrArea(x = 179f, y = 400f, width = 665f, height = 665f, radius = 16f, background = "#FFFFFF"),
-            elements = listOf(
-                TemplateTextElement(id = "header", x = 512f, y = 128f, width = 768f, height = 50f, text = "", fontSize = 24f, align = Paint.Align.CENTER, color = "#E040FB", isBold = true),
-                TemplateTextElement(id = "title", x = 512f, y = 256f, width = 768f, height = 100f, text = "FIESTA NEÓN", fontSize = 48f, align = Paint.Align.CENTER, color = "#E040FB", isBold = true),
-                TemplateTextElement(id = "subtext", x = 512f, y = 1171f, width = 768f, height = 80f, text = "Escanea para entrar", fontSize = 28f, align = Paint.Align.CENTER, color = "#E040FB", isBold = false),
-                TemplateTextElement(id = "footer", x = 512f, y = 1190f, width = 768f, height = 50f, text = "", fontSize = 22f, align = Paint.Align.CENTER, color = "#E040FB", isBold = false)
+                TemplateTextElement("header", 512f, 118f, 800f, 50f, "", 24f),
+                TemplateTextElement("title", 512f, 240f, 820f, 100f, title, 56f, isBold = true),
+                TemplateTextElement("subtext", 512f, 1124f, 820f, 70f, subtitle, 28f),
+                TemplateTextElement("footer", 512f, 1215f, 820f, 40f, "", 22f)
             )
         )
+    }
+
+    val AVAILABLE_TEMPLATES = listOf(
+        themedTemplate("business_contact", "Tarjeta de contacto", "Negocios", "#E9F3EC", "#1B6A50", "CONTACTO", "Escanea para guardar mis datos"),
+        themedTemplate("business_website", "Sitio web", "Negocios", "#E8EFF7", "#315C7A", "VISITA NUESTRA WEB", "Descubre más sobre nosotros"),
+        themedTemplate("shop_payment", "Pago", "Comercio", "#F5EEE2", "#95692D", "PAGA AQUÍ", "Escanea para pagar"),
+        themedTemplate("shop_catalog", "Catálogo", "Comercio", "#F3E8E5", "#9D5C49", "NUESTROS PRODUCTOS", "Explora nuestro catálogo"),
+        themedTemplate("food_menu", "Menú", "Gastronomía", "#F5EDDF", "#9A6542", "NUESTRO MENÚ", "Escanea para ver la carta"),
+        themedTemplate("food_wifi", "Wi-Fi del local", "Gastronomía", "#E7F1E5", "#4E7955", "CONÉCTATE", "Escanea para acceder al Wi-Fi"),
+        themedTemplate("event_invitation", "Invitación", "Eventos", "#F5E9EC", "#A05C74", "ESTÁS INVITADO", "Escanea para ver los detalles"),
+        themedTemplate("event_tickets", "Entrada", "Eventos", "#ECEAF7", "#68599A", "TU ENTRADA", "Escanea para acceder"),
+        themedTemplate("social_profile", "Perfil social", "Redes sociales", "#EAEAF7", "#5C5C9A", "SÍGUENOS", "Encuéntranos en redes"),
+        themedTemplate("social_share", "Compartir", "Redes sociales", "#E5F1F2", "#367E83", "COMPARTAMOS", "Escanea para conectar"),
+        themedTemplate("personal_info", "Información", "Personal", "#F1F1EC", "#687767", "ESCANEA AQUÍ", "Toda la información en un lugar"),
+        themedTemplate("personal_link", "Enlace personal", "Personal", "#F2EBDD", "#A2753A", "MI ENLACE", "Escanea para descubrir más")
     )
+
 
     fun renderTemplateBitmap(
         context: Context,
@@ -380,6 +159,21 @@ object TemplateRenderer {
             val destRect = RectF(dx, dy, dx + drawnW, dy + drawnH)
             val bmpPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
             canvas.drawBitmap(srcBmp, null, destRect, bmpPaint)
+        } else if (custom.templateDef.background.type == "themed") {
+            canvas.drawColor(custom.templateDef.cardColor)
+            val accent = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = custom.templateDef.primaryColor }
+            canvas.drawRoundRect(
+                RectF(70f * scaleX, 55f * scaleY, 160f * scaleX, 68f * scaleY),
+                8f * scaleX, 8f * scaleY, accent
+            )
+            accent.alpha = 24
+            canvas.drawCircle(935f * scaleX, 92f * scaleY, 110f * scaleX, accent)
+            canvas.drawCircle(65f * scaleX, 1215f * scaleY, 95f * scaleX, accent)
+            val white = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE }
+            canvas.drawRoundRect(
+                RectF(142f * scaleX, 325f * scaleY, 882f * scaleX, 1065f * scaleY),
+                50f * scaleX, 50f * scaleY, white
+            )
         } else if (custom.templateDef.background.type == "bitmap") {
             try {
                 val bmp = BitmapFactory.decodeResource(context.resources, custom.templateDef.vectorResId)

@@ -180,7 +180,7 @@
     <string name="preview_not_available">Aperçu non disponible</string>
     <string name="color_transparent">Transparent</string>
     <string name="color_black">Noir</string>
-    <string name="create_opt_ultra_transfer">⚡ Rayon Optique (Lab 300+ Ko/s)</string>
+    <string name="create_opt_ultra_transfer">Transférer par QR</string>
     <string name="title_ultra_transfer">Laboratoire de Transfert Optique</string>
     <string name="desc_ultra_transfer">Transmission de fichiers et vidéos par lumière à ultra-haute vitesse.</string>
     <string name="home_heading">Scanner et créer</string>
@@ -195,4 +195,8 @@
     <string name="upload_frame">Importer un cadre</string>
     <string name="theme_preview">Aperçu</string>
     <string name="editor_title">Personnaliser</string>
+    <string name="template_qr_design">Style du QR</string>
+    <string name="template_text_style">Style et textes supplémentaires</string>
+    <string name="template_export">Enregistrer et partager</string>
+    <string name="template_edit_text">Modifier le texte du modèle</string>
 </resources>

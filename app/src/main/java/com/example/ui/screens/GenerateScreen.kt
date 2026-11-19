@@ -1155,8 +1155,8 @@ fun GenerateScreen(
                         Icon(Icons.Filled.Star, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(32.dp))
                         Spacer(Modifier.width(10.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("⚡ Rayo Óptico (RGB 3X)", color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
-                            Text("Transmisión multiplexada a todo color (~1 MB/s)", color = Color(0xFFE0E0E0), style = MaterialTheme.typography.bodySmall)
+                            Text("Transferencia por QR", color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+                            Text("Envía archivos mediante códigos QR en blanco y negro", color = Color(0xFFE0E0E0), style = MaterialTheme.typography.bodySmall)
                         }
                         Button(
                             onClick = { 
@@ -1966,7 +1966,7 @@ fun GenerateScreen(
                                                 .weight(1f)
                                                 .height(175.dp)
                                                 .clickable {
-                                                    val isPremiumTemplate = templateDef.category == "Negocios" || templateDef.category == "Eventos" || templateDef.category == "Negocio" || templateDef.category == "Evento"
+                                                    val isPremiumTemplate = templateDef.category == "Eventos"
                                                     if (isPremiumTemplate && !isPro) {
                                                         showPaywallDialog = true
                                                     } else {
@@ -1976,7 +1976,7 @@ fun GenerateScreen(
                                                             selectedBackgroundColor = android.graphics.Color.WHITE
                                                         } else {
                                                             selectedTemplateDef = templateDef
-                                                            selectedForegroundColor = templateDef.primaryColor
+                                                            selectedForegroundColor = android.graphics.Color.BLACK
                                                             selectedBackgroundColor = android.graphics.Color.WHITE
                                                             if (customTitleText.isBlank()) customTitleText = templateDef.defaultText
                                                             if (customSubText.isBlank()) customSubText = templateDef.defaultSubtext
@@ -1993,7 +1993,7 @@ fun GenerateScreen(
                                             )
                                         ) {
                                             Box(modifier = Modifier.fillMaxSize().padding(8.dp)) {
-                                                val isPremiumTemplate = templateDef.category == "Negocios" || templateDef.category == "Eventos" || templateDef.category == "Negocio" || templateDef.category == "Evento"
+                                                val isPremiumTemplate = templateDef.category == "Eventos"
                                                 if (isPremiumTemplate && !isPro) {
                                                     Surface(
                                                         modifier = Modifier.align(Alignment.TopEnd),
@@ -2007,11 +2007,9 @@ fun GenerateScreen(
                                                     horizontalAlignment = Alignment.CenterHorizontally,
                                                     modifier = Modifier.fillMaxSize()
                                                 ) {
-                                                    androidx.compose.foundation.Image(
-                                                        painter = androidx.compose.ui.res.painterResource(id = templateDef.vectorResId),
-                                                        contentDescription = templateDef.name,
-                                                        modifier = Modifier.weight(1f).fillMaxWidth().padding(4.dp),
-                                                        contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                                                    TemplateThumbnail(
+                                                        template = templateDef,
+                                                        modifier = Modifier.weight(1f).fillMaxWidth().padding(4.dp)
                                                     )
                                                     Spacer(modifier = Modifier.height(4.dp))
                                                     Text(
@@ -3065,7 +3063,7 @@ fun GenerateScreen(
             }
 
             // Opciones de Descarga e Impresión: Botón para abrir BottomSheet
-            val activeBitmap = generatedBitmap ?: livePreviewBitmap
+            val activeBitmap = livePreviewBitmap
             if (activeBitmap != null) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
@@ -3440,7 +3438,7 @@ fun GenerateScreen(
 
     // Modal for Ultra HD export resolution
     if (showExportResolutionModal) {
-        val activeBitmapForUltra = generatedBitmap ?: livePreviewBitmap
+        val activeBitmapForUltra = livePreviewBitmap
         AlertDialog(
             onDismissRequest = { showExportResolutionModal = false },
             title = {
@@ -4598,14 +4596,18 @@ fun ExpandableSection(
     content: @Composable () -> Unit
 ) {
     var expanded by remember { mutableStateOf(initiallyExpanded) }
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
+      Column {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { expanded = !expanded }
-                .padding(vertical = 12.dp, horizontal = 4.dp),
+                .padding(vertical = 16.dp, horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(24.dp))
@@ -4627,11 +4629,12 @@ fun ExpandableSection(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 4.dp, vertical = 8.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 content()
             }
         }
+      }
     }
 }
 

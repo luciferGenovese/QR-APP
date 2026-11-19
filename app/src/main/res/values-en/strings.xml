@@ -318,7 +318,7 @@
     <string name="exp_stickers">Generates a ready-to-print A4 size PDF document with 12 sticker labels of your code.</string>
     <string name="exp_watermark">Embeds visual text over the code to protect it from screenshots while keeping it functional.</string>
     <string name="exp_animated">Transfer a file to another device without internet. The receiver must use this app to scan.</string>
-    <string name="create_opt_ultra_transfer">⚡ Optical Beam (Lab 300+ KB/s)</string>
+    <string name="create_opt_ultra_transfer">Transfer via QR</string>
     <string name="title_ultra_transfer">Ultra-Fast Optical Transfer Lab</string>
     <string name="desc_ultra_transfer">High-speed file and video transmission using compressed animated QR codes.</string>
     <string name="home_heading">Scan and create</string>
@@ -333,4 +333,8 @@
     <string name="upload_frame">Upload frame</string>
     <string name="theme_preview">Preview</string>
     <string name="editor_title">Customize</string>
+    <string name="template_qr_design">QR design</string>
+    <string name="template_text_style">Text style and additional text</string>
+    <string name="template_export">Save and share</string>
+    <string name="template_edit_text">Edit template text</string>
 </resources>

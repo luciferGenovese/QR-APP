@@ -73,6 +73,7 @@ fun TemplatesScreen(
 ) {
     val context = LocalContext.current
     var selectedTemplateDef by remember { mutableStateOf<TemplateItemDef?>(null) }
+    var selectedCategory by remember { mutableStateOf<String?>(null) }
 
     // Editor state
     var qrContent by remember { mutableStateOf("https://google.com") }
@@ -301,7 +302,26 @@ fun TemplatesScreen(
                     Text(stringResource(R.string.upload_frame) + " · Pro")
                 }
             }
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(12.dp))
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(bottom = 12.dp)
+            ) {
+                item {
+                    FilterChip(
+                        selected = selectedCategory == null,
+                        onClick = { selectedCategory = null },
+                        label = { Text(stringResource(R.string.folder_all)) }
+                    )
+                }
+                items(TemplateRenderer.AVAILABLE_TEMPLATES.map { it.category }.distinct()) { category ->
+                    FilterChip(
+                        selected = selectedCategory == category,
+                        onClick = { selectedCategory = category },
+                        label = { Text(category) }
+                    )
+                }
+            }
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(144.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -309,7 +329,9 @@ fun TemplatesScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 24.dp)
             ) {
-                items(TemplateRenderer.AVAILABLE_TEMPLATES) { template ->
+                items(TemplateRenderer.AVAILABLE_TEMPLATES.filter {
+                    selectedCategory == null || it.category == selectedCategory
+                }, key = { it.id }) { template ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -416,7 +438,7 @@ fun TemplatesScreen(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Editor: ${template.name}",
+                    text = template.name,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -444,7 +466,7 @@ fun TemplatesScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(250.dp)
+                            .heightIn(max = 180.dp).height(180.dp)
                             .clip(RoundedCornerShape(14.dp))
                             .pointerInput(Unit) {
                                 detectTapGestures(
@@ -484,96 +506,19 @@ fun TemplatesScreen(
 
                     Spacer(modifier = Modifier.height(6.dp))
 
-                    // Gesture Hint & Quick Action Bar
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    TextButton(
+                        onClick = {
+                            activeEditTarget = TextTarget.MAIN_TITLE
+                            showQuickEditDialog = true
+                        },
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = "💡 Doble toque: editar | Mantener: ventana de texto",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Medium
-                        )
-                        TextButton(
-                            onClick = { showTextStudioDialog = true },
-                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(14.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text("Ventana de Texto", style = MaterialTheme.typography.labelSmall)
-                        }
-                    }
-
-                    // Interactive quick badges for texts
-                    LazyRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        item {
-                            AssistChip(
-                                onClick = {
-                                    activeEditTarget = TextTarget.MAIN_TITLE
-                                    showQuickEditDialog = true
-                                },
-                                label = { Text("✨ Título: ${titleText.take(15)}") },
-                                leadingIcon = {
-                                    Icon(Icons.Default.TextFields, contentDescription = null, modifier = Modifier.size(14.dp))
-                                }
-                            )
-                        }
-                        if (headerAccentText.isNotBlank()) {
-                            item {
-                                AssistChip(
-                                    onClick = {
-                                        activeEditTarget = TextTarget.HEADER_ACCENT
-                                        showQuickEditDialog = true
-                                    },
-                                    label = { Text("📌 Cabecera: ${headerAccentText.take(12)}") }
-                                )
-                            }
-                        }
-                        if (showSubtext && subtext.isNotBlank()) {
-                            item {
-                                AssistChip(
-                                    onClick = {
-                                        activeEditTarget = TextTarget.SUBTEXT
-                                        showQuickEditDialog = true
-                                    },
-                                    label = { Text("📝 Sub: ${subtext.take(12)}") }
-                                )
-                            }
-                        }
-                        if (footerAccentText.isNotBlank()) {
-                            item {
-                                AssistChip(
-                                    onClick = {
-                                        activeEditTarget = TextTarget.FOOTER_ACCENT
-                                        showQuickEditDialog = true
-                                    },
-                                    label = { Text("🔻 Pie: ${footerAccentText.take(12)}") }
-                                )
-                            }
-                        }
-                        item {
-                            FilledTonalButton(
-                                onClick = {
-                                    activeEditTarget = TextTarget.CREATE_NEW
-                                    showTextStudioDialog = true
-                                },
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                                modifier = Modifier.height(32.dp)
-                            ) {
-                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text("➕ Crear Texto", style = MaterialTheme.typography.labelSmall)
-                            }
-                        }
+                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.template_edit_text))
                     }
                 }
             }
-
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -583,147 +528,9 @@ fun TemplatesScreen(
             ) {
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // --- MAIN ACTION BUTTONS (Crear Texto, Ventana de Texto, Guardar, PDF, JPG, Share) ---
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    // Dedicated Text Studio and Creation Action Row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        FilledTonalButton(
-                            onClick = {
-                                activeEditTarget = TextTarget.MAIN_TITLE
-                                showTextStudioDialog = true
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text("Ventana de Texto")
-                        }
-
-                        Button(
-                            onClick = {
-                                activeEditTarget = TextTarget.CREATE_NEW
-                                showTextStudioDialog = true
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text("Crear / Añadir Texto")
-                        }
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(
-                            onClick = {
-                                val currentBmp = liveRenderedBitmap
-                                if (currentBmp != null) {
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q || storagePermissionState.status.isGranted) {
-                                        saveTemplateBitmapToGallery(context, currentBmp, Bitmap.CompressFormat.PNG)
-                                    } else {
-                                        pendingBitmapFormat = Bitmap.CompressFormat.PNG
-                                        storagePermissionState.launchPermissionRequest()
-                                    }
-                                }
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text("Descargar PNG")
-                        }
-
-                        Button(
-                            onClick = {
-                                val currentBmp = liveRenderedBitmap
-                                if (currentBmp != null) {
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q || storagePermissionState.status.isGranted) {
-                                        saveTemplateBitmapToGallery(context, currentBmp, Bitmap.CompressFormat.JPEG)
-                                    } else {
-                                        pendingBitmapFormat = Bitmap.CompressFormat.JPEG
-                                        storagePermissionState.launchPermissionRequest()
-                                    }
-                                }
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text("Descargar JPG")
-                        }
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = {
-                                val currentBmp = liveRenderedBitmap
-                                if (currentBmp != null) {
-                                    exportTemplatePdf(context, currentBmp, template.name, titleText, qrContent)
-                                }
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text("Exportar PDF (12 Stickers)")
-                        }
-
-                        OutlinedButton(
-                            onClick = {
-                                val currentBmp = liveRenderedBitmap
-                                if (currentBmp != null) {
-                                    shareTemplateBitmap(context, currentBmp)
-                                }
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text("Compartir")
-                        }
-                    }
-
-                    if (viewModel != null) {
-                        FilledTonalButton(
-                            onClick = {
-                                val currentBmp = liveRenderedBitmap
-                                if (currentBmp != null) {
-                                    viewModel.saveCode(
-                                        content = qrContent,
-                                        format = "QR_CODE",
-                                        type = "TEMPLATE_${template.id.uppercase()}",
-                                        bitmap = currentBmp
-                                    )
-                                    Toast.makeText(context, "Plantilla guardada en el historial", Toast.LENGTH_SHORT).show()
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(Icons.Default.Save, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Guardar en Historial")
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-                HorizontalDivider()
-                Spacer(modifier = Modifier.height(16.dp))
-
                 // --- CONTROLS SECTION 1: QR CODE CONTENT & SHAPE ---
                 Text(
-                    text = "1. Contenido y Código QR (Centrado)",
+                    text = "Contenido",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.align(Alignment.Start)
@@ -733,7 +540,7 @@ fun TemplatesScreen(
                 OutlinedTextField(
                     value = qrContent,
                     onValueChange = { qrContent = it },
-                    label = { Text("Contenido del QR (Enlace o Texto)") },
+                    label = { Text("Contenido del QR") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     leadingIcon = { Icon(Icons.Default.Link, contentDescription = null) }
@@ -741,6 +548,19 @@ fun TemplatesScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
+                // Main Title
+                OutlinedTextField(
+                    value = titleText,
+                    onValueChange = { titleText = it },
+                    label = { Text("Título principal") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    leadingIcon = { Icon(Icons.Default.TextFields, contentDescription = null) }
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                ExpandableSection(title = stringResource(R.string.template_qr_design), icon = Icons.Default.Palette) {
                 // QR Body Shape selector
                 Text(
                     text = "Forma del cuerpo del QR:",
@@ -867,9 +687,12 @@ fun TemplatesScreen(
                 HorizontalDivider()
                 Spacer(modifier = Modifier.height(16.dp))
 
+                }
+
+                ExpandableSection(title = stringResource(R.string.template_text_style), icon = Icons.Default.TextFields) {
                 // --- CONTROLS SECTION 2: TEMPLATE TEXT CUSTOMIZATION ---
                 Text(
-                    text = "2. Textos y Títulos de la Plantilla",
+                    text = "Texto y estilo",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.align(Alignment.Start)
@@ -884,18 +707,6 @@ fun TemplatesScreen(
                     placeholder = { Text("Ej: Fradel and Spies Co / PARA PAGAR") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Main Title
-                OutlinedTextField(
-                    value = titleText,
-                    onValueChange = { titleText = it },
-                    label = { Text("Título Principal (ej: ESCANÉAME, SCAN HERE, MENÚ)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    leadingIcon = { Icon(Icons.Default.TextFields, contentDescription = null) }
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
@@ -1102,6 +913,148 @@ fun TemplatesScreen(
                     shape = RoundedCornerShape(12.dp)
                 )
 
+                }
+
+                ExpandableSection(title = stringResource(R.string.template_export), icon = Icons.Default.FileDownload) {
+                // --- MAIN ACTION BUTTONS (Crear Texto, Ventana de Texto, Guardar, PDF, JPG, Share) ---
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Dedicated Text Studio and Creation Action Row
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        FilledTonalButton(
+                            onClick = {
+                                activeEditTarget = TextTarget.MAIN_TITLE
+                                showTextStudioDialog = true
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Ventana de Texto")
+                        }
+
+                        Button(
+                            onClick = {
+                                activeEditTarget = TextTarget.CREATE_NEW
+                                showTextStudioDialog = true
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Crear / Añadir Texto")
+                        }
+                    }
+
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                val currentBmp = liveRenderedBitmap
+                                if (currentBmp != null) {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q || storagePermissionState.status.isGranted) {
+                                        saveTemplateBitmapToGallery(context, currentBmp, Bitmap.CompressFormat.PNG)
+                                    } else {
+                                        pendingBitmapFormat = Bitmap.CompressFormat.PNG
+                                        storagePermissionState.launchPermissionRequest()
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Descargar PNG")
+                        }
+
+                        Button(
+                            onClick = {
+                                val currentBmp = liveRenderedBitmap
+                                if (currentBmp != null) {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q || storagePermissionState.status.isGranted) {
+                                        saveTemplateBitmapToGallery(context, currentBmp, Bitmap.CompressFormat.JPEG)
+                                    } else {
+                                        pendingBitmapFormat = Bitmap.CompressFormat.JPEG
+                                        storagePermissionState.launchPermissionRequest()
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Descargar JPG")
+                        }
+                    }
+
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                val currentBmp = liveRenderedBitmap
+                                if (currentBmp != null) {
+                                    exportTemplatePdf(context, currentBmp, template.name, titleText, qrContent)
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Exportar PDF (12 Stickers)")
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                val currentBmp = liveRenderedBitmap
+                                if (currentBmp != null) {
+                                    shareTemplateBitmap(context, currentBmp)
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Compartir")
+                        }
+                    }
+
+                    if (viewModel != null) {
+                        FilledTonalButton(
+                            onClick = {
+                                val currentBmp = liveRenderedBitmap
+                                if (currentBmp != null) {
+                                    viewModel.saveCode(
+                                        content = qrContent,
+                                        format = "QR_CODE",
+                                        type = "TEMPLATE_${template.id.uppercase()}",
+                                        bitmap = currentBmp
+                                    )
+                                    Toast.makeText(context, "Plantilla guardada en el historial", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Save, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Guardar en Historial")
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(16.dp))
+
+                }
                 Spacer(modifier = Modifier.height(80.dp))
             }
         }
@@ -1127,8 +1080,8 @@ fun TemplatesScreen(
             selectedTextColor = selectedTextColor,
             onTextColorChange = { selectedTextColor = it },
             colorPalette = colorPalette,
-            isBold = true,
-            isUppercase = true,
+            isBold = isBold,
+            isUppercase = isUppercase,
             onOpenFullStudio = {
                 showQuickEditDialog = false
                 showTextStudioDialog = true
